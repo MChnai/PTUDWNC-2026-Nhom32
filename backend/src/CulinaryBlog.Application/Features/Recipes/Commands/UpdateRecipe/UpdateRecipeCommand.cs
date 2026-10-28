@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Common.Models;
+using CulinaryBlog.Domain.ValueObjects;
 using CulinaryBlog.Domain.Entities;
 using CulinaryBlog.Domain.Enums;
 using MediatR;
@@ -18,8 +19,8 @@ public record UpdateRecipeCommand : IRequest<Result<Unit>>
     public int Servings { get; init; }
     public RecipeDifficulty Difficulty { get; init; }
     public Guid CategoryId { get; init; }
-    public uint RowVersion { get; init; } // Đổi kiểu dữ liệu từ byte[] sang uint
-
+    public uint RowVersion { get; init; } 
+    public RecipeNutrition? Nutrition { get; init; }
     public ClaimsPrincipal CurrentUser { get; init; } = default!;
 }
 
@@ -66,6 +67,10 @@ public class UpdateRecipeCommandHandler : IRequestHandler<UpdateRecipeCommand, R
         recipe.Servings = request.Servings;
         recipe.Difficulty = request.Difficulty;
         recipe.CategoryId = request.CategoryId;
+        if (request.Nutrition != null)
+        {
+            recipe.Nutrition = request.Nutrition;
+        }
 
         try
         {

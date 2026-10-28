@@ -21,6 +21,7 @@ using CulinaryBlog.Application.Features.Recipes.Queries.GetSteps;
 using CulinaryBlog.Application.Features.Recipes.Commands.AddStep;
 using CulinaryBlog.Application.Features.Recipes.Commands.UpdateStep;
 using CulinaryBlog.Application.Features.Recipes.Commands.DeleteStep;
+using CulinaryBlog.Application.Features.Recipes.Queries.GetRecipeById;
 using CulinaryBlog.Application.Features.Recipes.Queries.GetIngredients;
 using CulinaryBlog.Application.Features.Recipes.Queries.SearchRecipes;
 
@@ -30,7 +31,7 @@ public static class RecipeEndpoints
 {
     public static void MapRecipeEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/recipes").WithTags("Recipes");
+        var group = app.MapGroup("/recipes").WithTags("Recipes");
 
         // FR-RCP-001: Xem Danh sách Công thức (Public)
         group.MapGet("/", async (
@@ -68,13 +69,40 @@ public static class RecipeEndpoints
                 });
             }
 
-            return Results.Ok(result.Value);
+            return Results.Ok(result);
         })
         .WithName("GetRecipes")
         .WithSummary("Xem danh sách công thức (FR-RCP-001)")
         .Produces<Result<PaginatedList<RecipeDto>>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .AllowAnonymous();
+
+        // GET /api/v1/recipes/{id}
+        group.MapGet("/{id:guid}", async (
+            Guid id,
+            ClaimsPrincipal user,
+            ISender mediator,
+            CancellationToken cancellationToken) =>
+        {
+            var query = new GetRecipeByIdQuery(id, user);
+
+            var result = await mediator.Send(
+                query,
+                cancellationToken
+            );
+
+            if (!result.IsSuccess)
+            {
+                return Results.NotFound(result);
+            }
+
+            return Results.Ok(result);
+        })
+        .WithName("GetRecipeDetail")
+        .WithSummary("Lấy chi tiết công thức")
+        .AllowAnonymous()
+        .Produces<Result<RecipeDetailDto>>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
 
         // FR-RCP-003: Tạo Công thức Mới (Author, Admin)
         group.MapPost("/", async (
@@ -96,8 +124,7 @@ public static class RecipeEndpoints
             {
                 return Results.BadRequest(result);
             }
-
-            return Results.CreatedAtRoute("GetRecipeDetail", new { identifier = result.Value }, result);
+            return Results.Created($"/api/v1/recipes/{result.Value}", result);
         })
         .WithName("CreateRecipe")
         .WithSummary("Tạo công thức mới (Trạng thái Draft)")
@@ -352,14 +379,14 @@ public static class RecipeEndpoints
             };
 
             var result = await mediator.Send(command, ct);
-            return result.IsSuccess 
-                ? Results.Created($"/api/recipes/{recipeId}/ingredients/{result.Value!.Id}", result) 
+            return result.IsSuccess
+                ? Results.Created($"/api/recipes/{recipeId}/ingredients/{result.Value!.Id}", result)
                 : Results.BadRequest(result);
         }).RequireAuthorization();
 
         // PUT: Cập nhật nguyên liệu
         ingredientGroup.MapPut("/{ingredientId:guid}", async (
-            Guid recipeId,  
+            Guid recipeId,
             Guid ingredientId,
             [FromBody] UpdateIngredientRequest request,
             ClaimsPrincipal user,
@@ -433,13 +460,16 @@ public static class RecipeEndpoints
             {
                 RecipeId = recipeId,
                 Instruction = request.Instruction,
+                Title = request.Title,
+                Description = request.Instruction,
+                TimerMinutes = request.TimerMinutes,
                 ImageUrl = request.ImageUrl,
                 CurrentUser = user
             };
 
             var result = await mediator.Send(command, ct);
-            return result.IsSuccess 
-                ? Results.Created($"/api/recipes/{recipeId}/steps/{result.Value!.Id}", result) 
+            return result.IsSuccess
+                ? Results.Created($"/api/recipes/{recipeId}/steps/{result.Value!.Id}", result)
                 : Results.BadRequest(result);
         })
         .WithName("AddRecipeStep")
@@ -461,6 +491,9 @@ public static class RecipeEndpoints
                 StepId = stepId,
                 Instruction = request.Instruction,
                 ImageUrl = request.ImageUrl,
+                Title = request.Title,
+                Description = request.Instruction,
+                TimerMinutes = request.TimerMinutes,
                 CurrentUser = user
             };
 
@@ -529,7 +562,7 @@ public static class RecipeEndpoints
                 });
             }
 
-            return Results.Ok(result.Value);
+            return Results.Ok(result);
         })
         .WithName("SearchRecipes")
         .WithSummary("Tìm kiếm công thức toàn văn bản không dấu (FR-SRCH-001)")

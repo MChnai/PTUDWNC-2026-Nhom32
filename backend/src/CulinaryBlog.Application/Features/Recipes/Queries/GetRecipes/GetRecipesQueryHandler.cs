@@ -31,7 +31,9 @@
 
             if (request.Difficulty.HasValue)
             {
-                query = query.Where(r => (int)r.Difficulty == request.Difficulty.Value);
+                var difficulty = (RecipeDifficulty)request.Difficulty.Value;
+
+                query = query.Where( r => r.Difficulty == difficulty);
             }
 
             if (request.MaxTotalTime.HasValue)
@@ -72,12 +74,19 @@
                             ?? r.Images.Select(img => img.OriginalUrl).FirstOrDefault(),
                 PrepTimeMinutes = r.PrepTimeMinutes,
                 CookTimeMinutes = r.CookTimeMinutes,
-                Difficulty = (int)r.Difficulty,
+                Difficulty = r.Difficulty,
                 ViewCount = r.ViewCount,
                 AverageRating = (double)r.RatingAverage,
                 CategoryId = r.CategoryId,
                 CategoryName = r.Category != null ? r.Category.Name : string.Empty,
-                PublishedAt = r.PublishedAt ?? r.CreatedAt
+                PublishedAt = r.PublishedAt ?? r.CreatedAt,
+                Servings = r.Servings,
+                AuthorId = r.AuthorId,
+                AuthorName = r.Author != null
+                    ? r.Author.FullName
+                    : string.Empty,
+                RatingCount = r.RatingCount,
+                CreatedAt = r.CreatedAt,
             });
 
             // 5. Phân trang

@@ -100,34 +100,13 @@ export const Header: React.FC<HeaderProps> = ({
               <ChefHat className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xl font-bold font-serif tracking-tight text-stone-900 group-hover:text-amber-700 transition-colors">
+                <p className="text-xl font-bold font-serif tracking-tight text-stone-900 group-hover:text-amber-700 transition-colors">
                   Culinary Blog
-                </span>
-                <span className="text-[10px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-stone-100 text-stone-600 font-semibold border border-stone-200">
-                  v1.0
-                </span>
-              </div>
+                </p>
               <p className="text-xs text-stone-500 hidden sm:block">
                 Recipe & Culinary Products Management Platform
               </p>
             </div>
-          </div>
-
-          {/* Search Trigger */}
-          <div className="flex-1 max-w-md mx-2 hidden md:block">
-            <button
-              onClick={onOpenSearch}
-              className="w-full flex items-center justify-between px-3.5 py-2 text-sm text-stone-500 bg-stone-100 hover:bg-stone-200/80 border border-stone-200 rounded-lg transition-colors cursor-pointer text-left"
-            >
-              <span className="flex items-center gap-2">
-                <Search className="w-4 h-4 text-stone-400" />
-                <span>Search recipes (PostgreSQL 16 tsvector FTS)...</span>
-              </span>
-              <kbd className="hidden lg:inline-block px-1.5 py-0.5 text-[10px] font-mono text-stone-400 bg-white rounded border border-stone-200">
-                ⌘K
-              </kbd>
-            </button>
           </div>
 
           {/* Navigation Links */}
@@ -152,42 +131,6 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               Management
-            </button>
-
-            <button
-              onClick={() => setActiveTab('api')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'api'
-                  ? 'bg-sky-50 text-sky-900 font-semibold'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-              }`}
-            >
-              <Terminal className="w-4 h-4 text-sky-600" />
-              <span className="hidden sm:inline">REST API</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('architecture')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'architecture'
-                  ? 'bg-emerald-50 text-emerald-900 font-semibold'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-              }`}
-            >
-              <Database className="w-4 h-4 text-emerald-600" />
-              <span className="hidden sm:inline">C# & SQL Architecture</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('monitor')}
-              className={`px-2.5 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'monitor'
-                  ? 'bg-purple-50 text-purple-900 font-semibold'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-              }`}
-              title="System observability & Hangfire jobs"
-            >
-              <Activity className="w-4 h-4 text-purple-600" />
             </button>
           </nav>
 

@@ -16,7 +16,7 @@ public static class CategoryEndpoints
 {
     public static void MapCategoryEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/categories").WithTags("Categories");
+        var group = app.MapGroup("/categories").WithTags("Categories");
 
         // FR-CAT-001: Xem Danh sách Danh mục (Public)
         group.MapGet("/", async (ISender mediator, CancellationToken cancellationToken) =>
@@ -112,7 +112,10 @@ public static class CategoryEndpoints
             }
 
             return Results.Ok(result);
-        });
+        })
+        .RequireAuthorization(
+            policy => policy.RequireRole("Admin")
+        );
         // FR-CAT-005: Xóa Danh mục [Admin]
         group.MapDelete("/{id:guid}", async (
             Guid id,

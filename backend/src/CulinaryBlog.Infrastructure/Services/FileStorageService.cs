@@ -18,7 +18,7 @@ public class FileStorageService : IFileStorageService
         if (file == null || file.Length == 0)
             throw new ArgumentException("File is empty", nameof(file));
 
-        var webRootPath = _environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+        var webRootPath = _environment.WebRootPath ?? Path.Combine( _environment.ContentRootPath, "wwwroot");
         var uploadsFolder = Path.Combine(webRootPath, "uploads", folderName);
 
         if (!Directory.Exists(uploadsFolder))

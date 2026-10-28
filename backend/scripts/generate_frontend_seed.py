@@ -210,7 +210,7 @@ def generate():
         })
 
     # Render typescript file
-    content = 'import { Category, Recipe, RecipeDifficulty, RecipeStatus, ApplicationUser } from "../types";\n\n'
+    content = 'import { Category, Recipe, RecipeDifficulty, RecipeStatus, ApplicationUser } from @/types";\n\n'
     content += f'export const SEED_USERS: ApplicationUser[] = {json.dumps(USERS, indent=2, ensure_ascii=False)};\n\n'
     content += f'export const SEED_CATEGORIES: Category[] = {json.dumps(categories_list, indent=2, ensure_ascii=False)};\n\n'
     

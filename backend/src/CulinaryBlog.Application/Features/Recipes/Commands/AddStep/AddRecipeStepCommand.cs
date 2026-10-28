@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Common.Models;
+using CulinaryBlog.Application.Common.Authorization;
 using CulinaryBlog.Application.Features.Recipes.DTOs;
 using CulinaryBlog.Domain.Entities;
 using MediatR;
@@ -12,6 +13,9 @@ public class AddRecipeStepCommand : IRequest<Result<RecipeStepDto>>
 {
     public Guid RecipeId { get; set; }
     public string Instruction { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int? TimerMinutes { get; set; }
     public string? ImageUrl { get; set; }
     public ClaimsPrincipal CurrentUser { get; set; } = null!;
 }
@@ -33,6 +37,16 @@ public class AddRecipeStepCommandHandler : IRequestHandler<AddRecipeStepCommand,
         if (recipe == null)
             return Result<RecipeStepDto>.Failure("NOT_FOUND", "Không tìm thấy công thức.");
 
+        if (!RecipePermission.CanEdit(
+            request.CurrentUser,
+            recipe.AuthorId))
+        {
+            return Result<RecipeStepDto>.Failure(
+                "FORBIDDEN",
+                "Bạn không có quyền thêm bước cho công thức này."
+            );
+        }
+
         var maxStepNumber = await _context.RecipeSteps
             .Where(s => s.RecipeId == request.RecipeId)
             .Select(s => (int?)s.StepNumber)
@@ -43,8 +57,10 @@ public class AddRecipeStepCommandHandler : IRequestHandler<AddRecipeStepCommand,
             Id = Guid.NewGuid(),
             RecipeId = request.RecipeId,
             StepNumber = maxStepNumber + 1,
-            Description = request.Instruction, // Gán Instruction từ Request vào Description của Entity
-            ImageUrl = request.ImageUrl
+            Description = request.Instruction, 
+            ImageUrl = request.ImageUrl,
+            TimerMinutes = request.TimerMinutes,
+            Title = request.Title.Trim(),
         };
 
         _context.RecipeSteps.Add(step);
@@ -56,7 +72,10 @@ public class AddRecipeStepCommandHandler : IRequestHandler<AddRecipeStepCommand,
             RecipeId = step.RecipeId,
             StepNumber = step.StepNumber,
             Instruction = step.Description,
-            ImageUrl = step.ImageUrl
+            ImageUrl = step.ImageUrl,
+            Title = step.Title,
+            Description = step.Description,
+            TimerMinutes = step.TimerMinutes,
         });
     }
 }

@@ -8,9 +8,9 @@ export const RecipeDifficulty = {
 export type RecipeDifficulty = typeof RecipeDifficulty[keyof typeof RecipeDifficulty];
 
 export const RecipeStatus = {
-  Draft: 0,
-  Published: 1,
-  Archived: 2,
+  Draft: 1,
+  Published: 2,
+  Archived: 3,
 } as const;
 
 export type RecipeStatus = typeof RecipeStatus[keyof typeof RecipeStatus];
@@ -78,11 +78,12 @@ export interface Category {
   slug: string;
   description?: string;
   imageUrl?: string;
-  orderIndex: number;
   recipeCount?: number;
-  createdAt: string;
+
+  orderIndex?: number;
+  createdAt?: string;
   updatedAt?: string;
-  isDeleted: boolean;
+  isDeleted?: boolean;
 }
 
 export interface Recipe {

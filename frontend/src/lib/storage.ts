@@ -977,8 +977,9 @@ class DatabaseEngine {
 
     const list = this.categories
       .filter(c => !c.isDeleted)
-      .sort((a, b) => a.orderIndex - b.orderIndex);
-    
+      .sort((a, b) =>
+        (a.orderIndex ?? 0) - (b.orderIndex ?? 0)
+      );    
     this.setCache(cacheKey, list, 3600); // 1 hour TTL
     return list;
   }

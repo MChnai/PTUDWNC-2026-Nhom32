@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Common.Models;
+using CulinaryBlog.Application.Common.Authorization;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
