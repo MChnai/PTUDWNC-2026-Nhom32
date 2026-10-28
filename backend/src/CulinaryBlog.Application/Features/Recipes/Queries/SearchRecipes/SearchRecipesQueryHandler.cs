@@ -31,8 +31,10 @@ public class SearchRecipesQueryHandler : IRequestHandler<SearchRecipesQuery, Res
         // 1. [FR-SRCH-001] Chạy PostgreSQL FTS lấy danh sách ID bài viết khớp từ khóa + điểm rank_score
         var ftsResults = await _context.Database
             .SqlQuery<SearchRecipesRawSqlResult>($"""
-                SELECT id AS Id, rank_score AS Rank_Score 
-                FROM fn_search_recipes({keyword}, 1000, 0)
+                SELECT
+                    id AS "Id",
+                    rank_score AS "Rank_Score"
+                FROM public.fn_search_recipes({keyword}, 1000, 0)
             """)
             .ToListAsync(cancellationToken);
 
@@ -55,7 +57,9 @@ public class SearchRecipesQueryHandler : IRequestHandler<SearchRecipesQuery, Res
 
         if (request.Difficulty.HasValue)
         {
-            query = query.Where(r => (int)r.Difficulty == request.Difficulty.Value);
+            var difficulty = (RecipeDifficulty)request.Difficulty.Value;
+
+            query = query.Where( r => r.Difficulty == difficulty);
         }
 
         if (request.MaxTotalTime.HasValue)
@@ -74,12 +78,19 @@ public class SearchRecipesQueryHandler : IRequestHandler<SearchRecipesQuery, Res
                          ?? r.Images.Select(img => img.OriginalUrl).FirstOrDefault(),
             PrepTimeMinutes = r.PrepTimeMinutes,
             CookTimeMinutes = r.CookTimeMinutes,
-            Difficulty = (int)r.Difficulty,
+            Difficulty = r.Difficulty,
             ViewCount = r.ViewCount,
             AverageRating = (double)r.RatingAverage,
             CategoryId = r.CategoryId,
             CategoryName = r.Category != null ? r.Category.Name : string.Empty,
-            PublishedAt = r.PublishedAt ?? r.CreatedAt
+            PublishedAt = r.PublishedAt ?? r.CreatedAt,
+            Servings = r.Servings,
+            AuthorId = r.AuthorId,
+            AuthorName = r.Author != null
+                ? r.Author.FullName
+                : string.Empty,
+            RatingCount = r.RatingCount,
+            CreatedAt = r.CreatedAt,
         });
 
         // 4. [FR-SRCH-003] Áp dụng Sắp xếp (Sorting)

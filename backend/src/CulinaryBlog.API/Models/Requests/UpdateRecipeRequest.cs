@@ -1,4 +1,5 @@
 using CulinaryBlog.Domain.Enums;
+using CulinaryBlog.Domain.ValueObjects;
 
 namespace CulinaryBlog.API.Models.Requests;
 
@@ -12,4 +13,5 @@ public record UpdateRecipeRequest
     public int Servings { get; init; }
     public RecipeDifficulty Difficulty { get; init; }
     public Guid CategoryId { get; init; }
+    public RecipeNutrition? Nutrition { get; init; }
 }

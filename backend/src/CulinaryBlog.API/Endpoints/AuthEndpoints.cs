@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using CulinaryBlog.Application.Common.Models; 
 using CulinaryBlog.Application.Features.Auth.DTOs;
 using CulinaryBlog.Application.Features.Auth.Commands.RefreshToken;
+using System.Security.Claims;
 
 namespace CulinaryBlog.API.Endpoints;
 
@@ -18,7 +19,7 @@ public static class AuthEndpoints
 {
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/auth")
+        var group = app.MapGroup("/auth")
                        .WithTags("Authentication");
 
         // POST: Register
@@ -86,15 +87,36 @@ public static class AuthEndpoints
 
             return Results.Ok(new { Total = users.Count, Data = users });
         })
-        .WithSummary("Lấy danh sách tất cả người dùng (GET)");
+        .WithSummary("Lấy danh sách tất cả người dùng (GET)")
+        .RequireAuthorization(
+            policy => policy.RequireRole("Admin")
+        );
 
         // GET: User by ID
-        group.MapGet("/users/{id:guid}", async (Guid id, IApplicationDbContext dbContext) =>
+        group.MapGet("/users/{id:guid}", async (
+            Guid id,
+            ClaimsPrincipal currentUser,
+            IApplicationDbContext dbContext) =>
         {
+            var userIdClaim = currentUser
+                .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            var isOwner =
+                Guid.TryParse(userIdClaim, out var currentUserId) &&
+                currentUserId == id;
+
+            var isAdmin = currentUser.IsInRole("Admin");
+
+            if (!isOwner && !isAdmin)
+            {
+                return Results.Forbid();
+            }
+
+            // Lấy thông tin người dùng từ PostgreSQL
             var user = await dbContext.Users
                 .AsNoTracking()
                 .Where(u => u.Id == id && !u.IsDeleted)
-                .Select(u => new 
+                .Select(u => new
                 {
                     u.Id,
                     u.Username,
@@ -107,14 +129,19 @@ public static class AuthEndpoints
                 })
                 .FirstOrDefaultAsync();
 
+            // Không tìm thấy người dùng
             if (user == null)
             {
-                return Results.NotFound(new { Message = "Không tìm thấy người dùng." });
+                return Results.NotFound(
+                    new { Message = "Không tìm thấy người dùng." }
+                );
             }
 
+            // Trả về dữ liệu thật
             return Results.Ok(user);
         })
-        .WithSummary("Lấy thông tin chi tiết người dùng theo ID (GET)");
+        .WithSummary("Lấy thông tin người dùng theo ID")
+        .RequireAuthorization();
 
         // FR-AUTH-002: Login
         group.MapPost("/login", async (
@@ -133,7 +160,7 @@ public static class AuthEndpoints
                 });
             }
 
-            return Results.Ok(result.Value);
+            return Results.Ok(result);
         })
         .WithName("Login")
         .AllowAnonymous();
