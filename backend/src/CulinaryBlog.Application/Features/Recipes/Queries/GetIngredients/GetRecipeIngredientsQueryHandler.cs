@@ -41,7 +41,7 @@ public class GetRecipeIngredientsQueryHandler
                 Quantity = ri.Quantity,
                 Unit = ri.Unit ?? string.Empty,
                 Notes = ri.Notes ?? string.Empty,
-                SortOrder = 0 
+                SortOrder = 0
             })
             .ToListAsync(cancellationToken);
 

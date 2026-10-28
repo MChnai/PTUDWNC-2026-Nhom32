@@ -10,7 +10,7 @@ public static class JobEndpoints
 {
     public static void MapJobEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/jobs")
+        var group = app.MapGroup("/jobs")
                        .WithTags("Background Jobs Management")
                        .RequireAuthorization(); // Hoặc .AllowAnonymous() trong quá trình dev test
 

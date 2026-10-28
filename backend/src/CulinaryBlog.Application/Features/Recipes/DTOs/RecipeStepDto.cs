@@ -7,4 +7,7 @@ public class RecipeStepDto
     public int StepNumber { get; set; }
     public string Instruction { get; set; } = string.Empty;
     public string? ImageUrl { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int? TimerMinutes { get; set; }
 }

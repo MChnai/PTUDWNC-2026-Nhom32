@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   PlusCircle,
   FolderTree,
@@ -17,6 +17,11 @@ interface DashboardProps {
   currentUser: ApplicationUser | null;
   categories: Category[];
   recipes: Recipe[];
+  filterStatus: string;
+  filterCategory: string;
+
+  onStatusChange: (value: string) => void;
+  onCategoryChange: (value: string) => void;
   onSelectRecipe: (recipe: Recipe) => void;
   onOpenNewRecipe: () => void;
   onEditRecipe: (recipe: Recipe) => void;
@@ -25,6 +30,11 @@ interface DashboardProps {
   onArchiveToggle: (recipe: Recipe) => void;
   onDeleteRecipe: (recipe: Recipe) => void;
   onResetSeed: () => void;
+  counts: {
+    draftCount: number;
+    publishedCount: number;
+    archivedCount: number;
+  };
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -39,10 +49,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onArchiveToggle,
   onDeleteRecipe,
   onResetSeed,
+  counts,
+  filterStatus,
+  filterCategory,
+  onStatusChange,
+  onCategoryChange,
 }) => {
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-
   const isAdmin = currentUser && currentUser.roles.includes('Admin');
 
   // Filter recipes according to user role & dashboard filters
@@ -60,10 +72,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
     userRecipes = userRecipes.filter(r => r.categoryId === filterCategory);
   }
 
-  const totalCount = userRecipes.length;
-  const publishedCount = userRecipes.filter(r => r.status === RecipeStatus.Published).length;
-  const draftCount = userRecipes.filter(r => r.status === RecipeStatus.Draft).length;
-  const archivedCount = userRecipes.filter(r => r.status === RecipeStatus.Archived).length;
+  const totalCount =
+    counts.draftCount +
+    counts.publishedCount +
+    counts.archivedCount;
+
+  const publishedCount = counts.publishedCount;
+  const draftCount = counts.draftCount;
+  const archivedCount = counts.archivedCount;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -145,42 +161,38 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <Filter className="w-3.5 h-3.5 text-stone-400" /> Status:
           </span>
           <button
-            onClick={() => setFilterStatus('all')}
-            className={`px-2.5 py-1 rounded-lg cursor-pointer ${
-              filterStatus === 'all'
+            onClick={() => onStatusChange('all')}
+            className={`px-2.5 py-1 rounded-lg cursor-pointer ${filterStatus === 'all'
                 ? 'bg-stone-900 text-white font-semibold'
                 : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-            }`}
+              }`}
           >
             All ({recipes.length})
           </button>
           <button
-            onClick={() => setFilterStatus(String(RecipeStatus.Published))}
-            className={`px-2.5 py-1 rounded-lg cursor-pointer ${
-              filterStatus === String(RecipeStatus.Published)
+            onClick={() => onStatusChange(String(RecipeStatus.Published))}
+            className={`px-2.5 py-1 rounded-lg cursor-pointer ${filterStatus === String(RecipeStatus.Published)
                 ? 'bg-emerald-600 text-white font-semibold'
                 : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-            }`}
+              }`}
           >
             Published
           </button>
           <button
-            onClick={() => setFilterStatus(String(RecipeStatus.Draft))}
-            className={`px-2.5 py-1 rounded-lg cursor-pointer ${
-              filterStatus === String(RecipeStatus.Draft)
+            onClick={() => onCategoryChange(String(RecipeStatus.Draft))}
+            className={`px-2.5 py-1 rounded-lg cursor-pointer ${filterStatus === String(RecipeStatus.Draft)
                 ? 'bg-stone-700 text-white font-semibold'
                 : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-            }`}
+              }`}
           >
             Draft
           </button>
           <button
-            onClick={() => setFilterStatus(String(RecipeStatus.Archived))}
-            className={`px-2.5 py-1 rounded-lg cursor-pointer ${
-              filterStatus === String(RecipeStatus.Archived)
+            onClick={() => onCategoryChange(String(RecipeStatus.Archived))}
+            className={`px-2.5 py-1 rounded-lg cursor-pointer ${filterStatus === String(RecipeStatus.Archived)
                 ? 'bg-amber-700 text-white font-semibold'
                 : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-            }`}
+              }`}
           >
             Archived
           </button>
@@ -190,7 +202,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <span className="text-stone-500">Category:</span>
           <select
             value={filterCategory}
-            onChange={e => setFilterCategory(e.target.value)}
+            onChange={e => onCategoryChange(e.target.value)}
             className="px-2.5 py-1 bg-stone-50 border border-stone-300 rounded-lg text-xs"
           >
             <option value="all">All Categories</option>
@@ -260,19 +272,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                       <td className="py-3 px-4">
                         <span
-                          className={`px-2.5 py-1 rounded-full text-[11px] font-semibold inline-flex items-center gap-1 ${
-                            recipe.status === RecipeStatus.Published
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-semibold inline-flex items-center gap-1 ${recipe.status === RecipeStatus.Published
                               ? 'bg-emerald-100 text-emerald-800'
                               : recipe.status === RecipeStatus.Draft
-                              ? 'bg-stone-100 text-stone-700'
-                              : 'bg-amber-100 text-amber-800'
-                          }`}
+                                ? 'bg-stone-100 text-stone-700'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}
                         >
                           {recipe.status === RecipeStatus.Published
                             ? 'Published'
                             : recipe.status === RecipeStatus.Draft
-                            ? 'Draft'
-                            : 'Archived'}
+                              ? 'Draft'
+                              : 'Archived'}
                         </span>
                       </td>
 
@@ -300,11 +311,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                           <button
                             onClick={() => onPublishToggle(recipe)}
-                            className={`p-1.5 rounded-lg cursor-pointer ${
-                              recipe.status === RecipeStatus.Published
+                            className={`p-1.5 rounded-lg cursor-pointer ${recipe.status === RecipeStatus.Published
                                 ? 'text-amber-600 hover:bg-amber-50'
                                 : 'text-emerald-600 hover:bg-emerald-50'
-                            }`}
+                              }`}
                             title={recipe.status === RecipeStatus.Published ? 'Unpublish' : 'Publish'}
                           >
                             <CheckCircle className="w-4 h-4" />

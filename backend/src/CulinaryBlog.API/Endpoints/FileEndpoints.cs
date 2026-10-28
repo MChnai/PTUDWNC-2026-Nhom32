@@ -14,7 +14,7 @@ public static class FileEndpoints
 {
     public static void MapFileEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/files")
+        var group = app.MapGroup("/files")
                        .WithTags("File Management");
 
         // FR-FILE-001 & FR-JOB-002: Upload File & Tự động sinh Thumbnail (nếu là ảnh)

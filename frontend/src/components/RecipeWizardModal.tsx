@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Clock, Check, AlertCircle } from 'lucide-react';
 import { type Recipe, type Category, RecipeDifficulty, type RecipeStep, type RecipeIngredient } from '@/types';
 
@@ -6,7 +6,7 @@ interface RecipeWizardModalProps {
   recipeToEdit?: Recipe | null;
   categories: Category[];
   onClose: () => void;
-  onSave: (recipeData: Partial<Recipe>, publishImmediately?: boolean) => void;
+  onSave: (recipeData: Partial<Recipe>, publishImmediately?: boolean, imageFile?: File | null) => Promise<void>;
 }
 
 export const RecipeWizardModal: React.FC<RecipeWizardModalProps> = ({
@@ -47,10 +47,20 @@ export const RecipeWizardModal: React.FC<RecipeWizardModalProps> = ({
   const [fat, setFat] = useState(recipeToEdit?.nutrition?.fat || 15);
 
   // Hero image
-  const [imageUrl, setImageUrl] = useState(
-    recipeToEdit?.images?.[0]?.originalUrl ||
-      'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80'
-  );
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+
+  useEffect(() => {
+    if (!imageFile) {
+      setPreviewUrl('');
+      return;
+    }
+
+    const url = URL.createObjectURL(imageFile);
+    setPreviewUrl(url);
+
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
 
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -137,14 +147,14 @@ export const RecipeWizardModal: React.FC<RecipeWizardModalProps> = ({
         {
           id: 'img-' + Date.now(),
           recipeId: recipeToEdit?.id || '',
-          originalUrl: imageUrl,
+          originalUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80',
           isPrimary: true,
           orderIndex: 1,
         },
       ],
     };
 
-    onSave(payload, publishImmediately);
+    void onSave(payload, publishImmediately, imageFile);
   };
 
   return (
@@ -172,41 +182,37 @@ export const RecipeWizardModal: React.FC<RecipeWizardModalProps> = ({
         <div className="px-6 pt-3 border-b border-stone-200 flex gap-2 sm:gap-4 overflow-x-auto bg-white">
           <button
             onClick={() => setActiveTab('info')}
-            className={`pb-3 text-xs sm:text-sm font-medium border-b-2 cursor-pointer transition-colors whitespace-nowrap ${
-              activeTab === 'info'
-                ? 'border-amber-600 text-amber-900 font-semibold'
-                : 'border-transparent text-stone-500 hover:text-stone-800'
-            }`}
+            className={`pb-3 text-xs sm:text-sm font-medium border-b-2 cursor-pointer transition-colors whitespace-nowrap ${activeTab === 'info'
+              ? 'border-amber-600 text-amber-900 font-semibold'
+              : 'border-transparent text-stone-500 hover:text-stone-800'
+              }`}
           >
             1. General Info
           </button>
           <button
             onClick={() => setActiveTab('ingredients')}
-            className={`pb-3 text-xs sm:text-sm font-medium border-b-2 cursor-pointer transition-colors whitespace-nowrap ${
-              activeTab === 'ingredients'
-                ? 'border-amber-600 text-amber-900 font-semibold'
-                : 'border-transparent text-stone-500 hover:text-stone-800'
-            }`}
+            className={`pb-3 text-xs sm:text-sm font-medium border-b-2 cursor-pointer transition-colors whitespace-nowrap ${activeTab === 'ingredients'
+              ? 'border-amber-600 text-amber-900 font-semibold'
+              : 'border-transparent text-stone-500 hover:text-stone-800'
+              }`}
           >
             2. Ingredients ({ingredients.length})
           </button>
           <button
             onClick={() => setActiveTab('steps')}
-            className={`pb-3 text-xs sm:text-sm font-medium border-b-2 cursor-pointer transition-colors whitespace-nowrap ${
-              activeTab === 'steps'
-                ? 'border-amber-600 text-amber-900 font-semibold'
-                : 'border-transparent text-stone-500 hover:text-stone-800'
-            }`}
+            className={`pb-3 text-xs sm:text-sm font-medium border-b-2 cursor-pointer transition-colors whitespace-nowrap ${activeTab === 'steps'
+              ? 'border-amber-600 text-amber-900 font-semibold'
+              : 'border-transparent text-stone-500 hover:text-stone-800'
+              }`}
           >
             3. Cooking Steps ({steps.length})
           </button>
           <button
             onClick={() => setActiveTab('nutrition')}
-            className={`pb-3 text-xs sm:text-sm font-medium border-b-2 cursor-pointer transition-colors whitespace-nowrap ${
-              activeTab === 'nutrition'
-                ? 'border-amber-600 text-amber-900 font-semibold'
-                : 'border-transparent text-stone-500 hover:text-stone-800'
-            }`}
+            className={`pb-3 text-xs sm:text-sm font-medium border-b-2 cursor-pointer transition-colors whitespace-nowrap ${activeTab === 'nutrition'
+              ? 'border-amber-600 text-amber-900 font-semibold'
+              : 'border-transparent text-stone-500 hover:text-stone-800'
+              }`}
           >
             4. Nutrition & Photo
           </button>
@@ -466,27 +472,21 @@ export const RecipeWizardModal: React.FC<RecipeWizardModalProps> = ({
           {activeTab === 'nutrition' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1">
-                  Hero Image URL (URL / MinIO S3)
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={imageUrl}
-                    onChange={e => setImageUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="flex-1 px-3.5 py-2 border border-stone-300 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-500"
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(e) => {
+                    setImageFile(e.target.files?.[0] ?? null);
+                  }}
+                  className="w-full border rounded-lg p-2"
+                />
+
+                {previewUrl && (
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="mt-3 w-full max-w-sm rounded-lg"
                   />
-                </div>
-                {imageUrl && (
-                  <div className="mt-2 aspect-[16/9] max-w-sm rounded-lg overflow-hidden bg-stone-100 border border-stone-200">
-                    <img
-                      src={imageUrl}
-                      alt="Preview"
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
                 )}
               </div>
 

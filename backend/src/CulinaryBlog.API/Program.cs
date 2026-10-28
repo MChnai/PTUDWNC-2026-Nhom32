@@ -15,6 +15,7 @@ using Scalar.AspNetCore;
 using Serilog;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.FileProviders;
 using Asp.Versioning;
 
 // 0. Khởi tạo Bootstrap Logger cho giai đoạn App Startup (FR-OBS-002)
@@ -30,8 +31,13 @@ try
     {
         options.AddPolicy("AllowFrontend", policy =>
         {
-            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() 
-                    ?? new[] { "http://localhost:3000", "http://localhost:5173" })
+            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+                    ?? new[] {
+                        "http://localhost:3000",
+                        "http://localhost:5173",
+                        "http://localhost:5174",
+                        "http://127.0.0.1:5174"
+                    })
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials();
@@ -41,7 +47,7 @@ try
     builder.Services.AddRateLimiter(options =>
     {
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-        
+
         // Fixed Window Policy: Tối đa 100 request / 1 phút cho mỗi IP
         options.AddFixedWindowLimiter("fixed-window", opt =>
         {
@@ -94,13 +100,13 @@ try
 
     // 4. Cấu hình Authentication & Authorization
     var jwtSettings = builder.Configuration.GetSection("Jwt");
-    var keyString = jwtSettings["Key"] ?? jwtSettings["SecretKey"] 
+    var keyString = jwtSettings["Key"] ?? jwtSettings["SecretKey"]
         ?? throw new InvalidOperationException("JWT Key chưa được cấu hình!");
 
     // Gán KeyId cho SecurityKey trùng khớp với "kid" trong JwtService
     var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString))
     {
-        KeyId = "CulinaryBlogSecretKeyId" 
+        KeyId = "CulinaryBlogSecretKeyId"
     };
 
     builder.Services.AddAuthentication(options =>
@@ -145,6 +151,21 @@ try
     builder.Services.AddScoped<IBackgroundJobService, HangfireJobService>();
 
     var app = builder.Build();
+    Console.WriteLine(
+    $"ContentRoot: {app.Environment.ContentRootPath}");
+    var webRoot = Path.Combine(
+        app.Environment.ContentRootPath,
+        "wwwroot"
+    );
+
+    Directory.CreateDirectory(webRoot);
+
+    app.Environment.WebRootPath = webRoot;
+
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(webRoot)
+    });
 
     // 5. Middlewares Logging & Tracing Context (FR-OBS-002)
     app.UseMiddleware<CorrelationIdMiddleware>();
@@ -172,7 +193,7 @@ try
         sitemapJobService.ScheduleRecurringSitemapJob();
     }
 
-        // Định tuyến Versioned Minimal API Set
+    // Định tuyến Versioned Minimal API Set
     var apiVersionSet = app.NewApiVersionSet()
         .HasApiVersion(new ApiVersion(1, 0))
         .HasApiVersion(new ApiVersion(2, 0))
@@ -201,7 +222,7 @@ try
     // app.MapFileEndpoints();
     // app.MapJobEndpoints();
 
-    versionedGroup.MapAuthEndpoints();        
+    versionedGroup.MapAuthEndpoints();
     versionedGroup.MapCategoryEndpoints();
     versionedGroup.MapRecipeEndpoints();
     versionedGroup.MapFileEndpoints();

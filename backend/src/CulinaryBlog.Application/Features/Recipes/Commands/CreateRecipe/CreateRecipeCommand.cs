@@ -24,8 +24,8 @@ public record CreateRecipeNutritionDto(
     decimal Fat,
     decimal Carbohydrates,
     decimal Protein,
-    decimal Fiber,
-    decimal Sugar
+    decimal? Fiber = 0,
+    decimal? Sugar = 0
 );
 
 public record CreateRecipeCommand(
