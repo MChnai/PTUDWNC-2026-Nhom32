@@ -13,5 +13,7 @@ public record GetRecipesQuery(
     int? MaxTotalTime = null,
     string? SearchTerm = null,
     string? SortBy = "createdAt",
-    string? SortDirection = "desc"
+    string? SortDirection = "desc",
+    int? MaxCookTime = null,
+    int? MinServings = null
 ) : IRequest<Result<PaginatedList<RecipeDto>>>;

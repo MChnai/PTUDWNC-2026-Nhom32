@@ -1,3 +1,4 @@
+using CulinaryBlog.Application.Common.Helpers;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Common.Models;
 using MediatR;
@@ -6,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace CulinaryBlog.Application.Features.Auth.Commands.Logout;
 
-public record LogoutCommand(string RefreshToken, string? IpAddress = null) : IRequest<Result<bool>>;
+public record LogoutCommand(string RefreshToken, string? IpAddress = null, Guid? UserId = null) : IRequest<Result<bool>>;
 
 public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result<bool>>
 {
@@ -30,10 +31,10 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result<bool>>
 
         // 1. Tìm Refresh Token trong CSDL
         var token = await _context.RefreshTokens
-            .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken.Trim(), cancellationToken);
+            .FirstOrDefaultAsync(rt => rt.Token == TokenHash.Compute(request.RefreshToken.Trim()), cancellationToken);
 
         // 2. Nếu không tìm thấy hoặc đã bị Revoke rồi thì vẫn báo thành công (Idempotent API)
-        if (token == null || token.IsRevoked)
+        if (token == null || token.IsRevoked || request.UserId != token.UserId)
         {
             return Result<bool>.Success(true);
         }

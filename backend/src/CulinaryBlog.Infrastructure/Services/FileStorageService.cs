@@ -1,55 +1,34 @@
 using CulinaryBlog.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-
 namespace CulinaryBlog.Infrastructure.Services;
 
-public class FileStorageService : IFileStorageService
+public class FileStorageService(IWebHostEnvironment environment) : IFileStorageService
 {
-    private readonly IWebHostEnvironment _environment;
-
-    public FileStorageService(IWebHostEnvironment environment)
+    private string Root => Path.GetFullPath(Path.Combine(environment.ContentRootPath, "wwwroot", "uploads"));
+    private string Resolve(string relative)
     {
-        _environment = environment;
+        if (!relative.StartsWith("/uploads/", StringComparison.Ordinal)) throw new ArgumentException("Không phải tệp tải lên của hệ thống.");
+        var path = Path.GetFullPath(Path.Combine(Root, relative[9..]));
+        if (!path.StartsWith(Root + Path.DirectorySeparatorChar, StringComparison.Ordinal)) throw new ArgumentException("Đường dẫn không hợp lệ.");
+        return path;
     }
-
-    public async Task<string> UploadFileAsync(IFormFile file, string folderName, CancellationToken cancellationToken = default)
+    public async Task<string> UploadFileAsync(IFormFile file, string folder, CancellationToken ct = default)
     {
-        if (file == null || file.Length == 0)
-            throw new ArgumentException("File is empty", nameof(file));
-
-        var webRootPath = _environment.WebRootPath ?? Path.Combine( _environment.ContentRootPath, "wwwroot");
-        var uploadsFolder = Path.Combine(webRootPath, "uploads", folderName);
-
-        if (!Directory.Exists(uploadsFolder))
-        {
-            Directory.CreateDirectory(uploadsFolder);
-        }
-
-        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-        var filePath = Path.Combine(uploadsFolder, fileName);
-
-        using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await file.CopyToAsync(stream, cancellationToken);
-        }
-
-        return $"/uploads/{folderName}/{fileName}";
+        if (folder.Contains("..") || Path.IsPathRooted(folder)) throw new ArgumentException("Thư mục không hợp lệ.");
+        var extension = file.ContentType switch { "image/png" => ".png", "image/webp" => ".webp", "image/avif" => ".avif", _ => ".jpg" };
+        var relative = $"/uploads/{folder.Trim('/')}/{Guid.NewGuid():N}{extension}";
+        var path = Resolve(relative);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        await using var output = File.Create(path);
+        await file.CopyToAsync(output, ct);
+        return relative;
     }
-
-    public Task DeleteFileAsync(string relativePath, CancellationToken cancellationToken = default)
+    public Task<Stream> OpenReadAsync(string path, CancellationToken ct = default) => Task.FromResult<Stream>(File.OpenRead(Resolve(path)));
+    public Task DeleteFileAsync(string path, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(relativePath))
-            return Task.CompletedTask;
-
-        var webRootPath = _environment.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-        var fullPath = Path.Combine(webRootPath, relativePath.TrimStart('/'));
-
-        if (File.Exists(fullPath))
-        {
-            File.Delete(fullPath);
-        }
-
+        // Existing seed images and external references are never deleted.
+        if (path.StartsWith("/uploads/", StringComparison.Ordinal)) File.Delete(Resolve(path));
         return Task.CompletedTask;
     }
 }

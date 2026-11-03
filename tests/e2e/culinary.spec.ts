@@ -1,0 +1,70 @@
+import { test, expect, type BrowserContext, type Page } from '@playwright/test';
+const suffix = Date.now().toString(36);
+const email = `e2e-${suffix}@example.test`;
+const password = 'E2E_Kitchen_Local_2026!';
+const title = `Monkiemthu ${suffix}`;
+let context: BrowserContext, page: Page, recipeId: string | undefined;
+test.describe.configure({ mode: 'serial' });
+test.beforeAll(async ({ browser }) => { context = await browser.newContext(); page = await context.newPage(); });
+test.afterAll(async ({ baseURL }) => {
+  if (recipeId) await context.request.delete(`${baseURL}/api/v1/recipes/${recipeId}`, { headers: { Origin: baseURL! } });
+  await context?.close();
+});
+test('1. Register a local author', async ({ baseURL }) => {
+  await page.goto(`${baseURL}/register`);
+  await page.getByLabel('Tên hiển thị', { exact: true }).fill('Bếp kiểm thử');
+  await page.getByLabel('Tên đăng nhập', { exact: true }).fill(`e2e_${suffix}`);
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Tạo tài khoản', exact: true }).click();
+  await expect(page).toHaveURL(/\/studio$/);
+  await expect(page.getByRole('heading', { name: /Căn bếp/ })).toBeVisible();
+});
+test('2. Logout and login', async ({ baseURL }) => {
+  await page.getByRole('button', { name: 'Đăng xuất', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Vào bếp cùng nhau', exact: true })).toBeVisible();
+  await page.goto(`${baseURL}/login`);
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Mật khẩu', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Đăng nhập', exact: true }).click();
+  await expect(page).toHaveURL(/\/studio$/);
+});
+test('3. Create a draft with an ingredient and cooking step', async ({ baseURL }) => {
+  await page.goto(`${baseURL}/studio/new`);
+  await page.getByLabel('Tên công thức').fill(title);
+  await page.getByLabel('Danh mục', { exact: false }).selectOption({ index: 1 });
+  await page.getByRole('button', { name: 'Tiếp tục', exact: true }).click();
+  await page.getByRole('button', { name: 'Thêm nguyên liệu', exact: true }).click();
+  await page.getByLabel('Tên nguyên liệu', { exact: true }).fill('Đậu hũ');
+  await page.getByLabel('Số lượng', { exact: true }).fill('200');
+  await page.getByLabel('Đơn vị', { exact: true }).fill('g');
+  await page.getByRole('button', { name: 'Tiếp tục', exact: true }).click();
+  await page.getByRole('button', { name: 'Thêm bước thực hiện', exact: true }).click();
+  await page.getByLabel('Tiêu đề bước', { exact: true }).fill('Chuẩn bị món ăn');
+  await page.getByLabel('Hướng dẫn', { exact: false }).fill('Chuẩn bị nguyên liệu sạch, làm chín và trình bày ra đĩa.');
+  await page.getByRole('button', { name: 'Tiếp tục', exact: true }).click();
+  await page.getByRole('button', { name: 'Lưu bản nháp', exact: true }).click();
+  await expect(page).toHaveURL(/\/studio$/);
+  const row = page.getByRole('row').filter({ hasText: title });
+  await expect(row).toContainText('Bản nháp');
+  const href = await row.getByRole('link', { name: `Chỉnh sửa ${title}`, exact: true }).getAttribute('href');
+  recipeId = href?.split('/')[2]; expect(recipeId).toBeTruthy();
+});
+test('4. Publish the draft', async () => {
+  const row = page.getByRole('row').filter({ hasText: title });
+  await row.getByRole('button', { name: 'Xuất bản', exact: true }).click();
+  await expect(page.getByRole('row').filter({ hasText: title })).toContainText('Đã xuất bản');
+});
+test('5. Search, open the recipe and use cooking mode', async ({ baseURL }) => {
+  await page.goto(`${baseURL}/recipes`);
+  await page.getByRole('textbox', { name: 'Từ khóa tìm kiếm', exact: true }).fill(title);
+  await page.getByRole('button', { name: 'Tìm công thức', exact: true }).click();
+  await page.getByRole('link', { name: title, exact: true }).click();
+  await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Bắt đầu nấu', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('button', { name: 'Đánh dấu đã hoàn thành', exact: true }).click();
+  await expect(page.getByRole('dialog')).toContainText('Bạn đã hoàn thành tất cả các bước');
+  await page.getByRole('button', { name: 'Kết thúc nấu', exact: true }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+});

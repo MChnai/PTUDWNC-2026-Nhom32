@@ -1,0 +1,51 @@
+name: Verify Culinary Blog
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_DB: culinaryblog, POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d culinaryblog"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      PGPASSWORD: postgres
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://127.0.0.1:5000
+      RateLimits__AuthPermitLimit: 100
+      Jobs__InMemory: "true"
+      Jobs__DisableRecurring: "true"
+      Seed__Enabled: "true"
+      Seed__AdminPassword: Culinary_Local_2026!
+      SEED_ADMIN_PASSWORD: Culinary_Local_2026!
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '10.0.x' }
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npm run build
+      - run: dotnet test backend/tests/CulinaryBlog.Tests -c Release
+      - run: dotnet build backend/src/CulinaryBlog.API -c Release
+      - name: Initialize disposable database
+        run: |
+          psql -v ON_ERROR_STOP=1 -h localhost -U postgres -d culinaryblog -f backend/scripts/init_postgresql16_schema_compatible.sql
+          psql -v ON_ERROR_STOP=1 -h localhost -U postgres -d culinaryblog -f backend/scripts/04_upgrade_v2.sql
+      - name: Verify API with PostgreSQL
+        run: |
+          cd backend/src/CulinaryBlog.API
+          dotnet bin/Release/net10.0/CulinaryBlog.API.dll > /tmp/culinary-api.log 2>&1 &
+          cd ../../..
+          for attempt in $(seq 1 60); do curl -fsS http://127.0.0.1:5000/health/live && break || sleep 1; done
+          python3 scripts/smoke_api.py --output verification/api-results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: api-verification, path: verification/api-results.json }

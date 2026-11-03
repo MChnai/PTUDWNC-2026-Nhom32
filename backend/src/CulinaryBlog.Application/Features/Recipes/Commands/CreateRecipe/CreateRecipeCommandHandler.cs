@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+using CulinaryBlog.Application.Common.Helpers;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Common.Models;
 using CulinaryBlog.Domain.Entities;
@@ -54,20 +54,18 @@ public class CreateRecipeCommandHandler
 
         var recipeId = Guid.NewGuid();
 
-        var baseSlug = Regex.Replace(
-            request.Title.Trim().ToLowerInvariant(),
-            @"[^a-z0-9]+",
-            "-"
-        ).Trim('-');
-
-        if (string.IsNullOrEmpty(baseSlug))
-            baseSlug = "recipe";
+        var baseSlug = SlugHelper.GenerateSlug(request.Title);
+        if (string.IsNullOrWhiteSpace(baseSlug)) baseSlug = "cong-thuc";
+        var slug = baseSlug;
+        var suffix = 2;
+        while (await _context.Recipes.IgnoreQueryFilters().AnyAsync(r => r.Slug == slug, cancellationToken))
+            slug = $"{baseSlug}-{suffix++}";
 
         var recipe = new Recipe
         {
             Id = recipeId,
             Title = request.Title.Trim(),
-            Slug = $"{baseSlug}-{recipeId:N}",
+            Slug = slug,
             Description = request.Description,
             Instructions = request.Instructions,
             Notes = request.Notes,
@@ -98,6 +96,7 @@ public class CreateRecipeCommandHandler
             };
         }
 
+        var ingredientIndex = 0;
         foreach (var ingredient in request.Ingredients ?? [])
         {
             recipe.Ingredients.Add(new RecipeIngredient
@@ -107,16 +106,17 @@ public class CreateRecipeCommandHandler
                 Quantity = ingredient.Quantity,
                 Unit = ingredient.Unit,
                 Notes = ingredient.Notes,
-                OrderIndex = ingredient.OrderIndex
+                OrderIndex = ++ingredientIndex
             });
         }
 
+        var stepIndex = 0;
         foreach (var step in request.Steps ?? [])
         {
             recipe.Steps.Add(new RecipeStep
             {
                 RecipeId = recipeId,
-                StepNumber = step.StepNumber,
+                StepNumber = ++stepIndex,
                 Title = step.Title,
                 Description = step.Description,
                 TimerMinutes = step.TimerMinutes,

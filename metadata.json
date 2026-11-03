@@ -1,6 +1,0 @@
-{
-  "name": "Culinary Blog & Recipe Management",
-  "description": "Recipe and Culinary Product Management Platform based on SRS IEEE 830 Specification for ASP.NET 10 Minimal APIs & Next.js App Router with PostgreSQL 16",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

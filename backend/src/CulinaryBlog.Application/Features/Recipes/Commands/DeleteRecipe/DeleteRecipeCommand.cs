@@ -52,7 +52,7 @@ public class DeleteRecipeCommandHandler : IRequestHandler<DeleteRecipeCommand, R
         {
             var recipeImages = recipe.Images
                 .Where(img => !string.IsNullOrWhiteSpace(img.OriginalUrl))
-                .Select(img => img.OriginalUrl)
+                .SelectMany(img => new[] { img.OriginalUrl, img.ThumbnailUrl, img.MediumUrl }.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!))
                 .ToList();
 
             imagesToDelete.AddRange(recipeImages);

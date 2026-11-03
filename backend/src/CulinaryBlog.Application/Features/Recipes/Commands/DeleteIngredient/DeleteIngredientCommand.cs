@@ -29,7 +29,6 @@ public class DeleteIngredientCommandHandler
         CancellationToken ct)
     {
         var recipe = await _context.Recipes
-            .AsNoTracking()
             .FirstOrDefaultAsync(r => r.Id == request.RecipeId, ct);
 
         if (recipe == null)

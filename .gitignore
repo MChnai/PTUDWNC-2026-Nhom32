@@ -68,3 +68,13 @@ Thumbs.db
 # ==========================================
 *.log
 *.tmp
+**/.next/
+**/__pycache__/
+playwright-report/
+test-results/
+.env.*
+!.env.example
+!frontend/.env.example
+
+**/.qa/
+**/.qa-tests/

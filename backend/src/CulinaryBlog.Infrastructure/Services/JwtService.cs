@@ -30,7 +30,9 @@ public class JwtService : IJwtService
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.Username),
             new(ClaimTypes.Email, user.Email),
-            new("fullName", user.FullName)
+            new("fullName", user.FullName),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
+            new("email_verified", user.EmailConfirmed ? "true" : "false")
         };
 
         foreach (var role in roles)

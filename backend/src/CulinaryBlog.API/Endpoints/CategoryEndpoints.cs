@@ -26,6 +26,7 @@ public static class CategoryEndpoints
 
             return Results.Ok(result);
         })
+        .CacheOutput("public-categories")
         .WithName("GetCategories")
         .WithSummary("Xem danh sách danh mục")
         .WithDescription("Trả về danh sách tất cả danh mục kèm số lượng công thức (recipeCount). Dữ liệu được cache 60 phút.")
@@ -35,6 +36,7 @@ public static class CategoryEndpoints
         group.MapGet("/{slug}", async (
             string slug,
             int? pageNumber,
+            int? page,
             int? pageSize,
             HttpContext httpContext,
             ISender mediator,
@@ -47,12 +49,12 @@ public static class CategoryEndpoints
             {
                 currentUserId = parsedGuid;
             }
-            var page = pageNumber is null or <= 0 ? 1 : pageNumber.Value;
-            var size = pageSize is null or <= 0 ? 10 : pageSize.Value;
+            var normalizedPage = Math.Clamp(page ?? pageNumber ?? 1, 1, 1000000);
+            var size = Math.Clamp(pageSize ?? 12, 1, 50);
 
             var query = new GetCategoryBySlugQuery(
                 slug,
-                page,
+                normalizedPage,
                 size,
                 currentUserId
             );
@@ -61,7 +63,7 @@ public static class CategoryEndpoints
 
             if (!result.IsSuccess)
             {
-                return Results.NotFound(result);
+                return ApiResults.Error(result);
             }
 
             return Results.Ok(result);
@@ -82,7 +84,7 @@ public static class CategoryEndpoints
 
             if (!result.IsSuccess)
             {
-                return Results.BadRequest(result);
+                return ApiResults.Error(result);
             }
 
             return Results.Created($"/api/categories/{result.Value}", result);        
@@ -108,7 +110,7 @@ public static class CategoryEndpoints
 
             if (!result.IsSuccess)
             {
-                return Results.BadRequest(result);
+                return ApiResults.Error(result);
             }
 
             return Results.Ok(result);
@@ -127,7 +129,7 @@ public static class CategoryEndpoints
 
             if (!result.IsSuccess)
             {
-                return Results.BadRequest(result);
+                return ApiResults.Error(result);
             }
 
             return Results.Ok(result);

@@ -1,26 +1,18 @@
-# Build stage using official .NET 10 SDK
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-WORKDIR /app
-
-# Copy csproj files and restore dependencies
-COPY src/CulinaryBlog.Domain/CulinaryBlog.Domain.csproj src/CulinaryBlog.Domain/
-COPY src/CulinaryBlog.Application/CulinaryBlog.Application.csproj src/CulinaryBlog.Application/
-COPY src/CulinaryBlog.Infrastructure/CulinaryBlog.Infrastructure.csproj src/CulinaryBlog.Infrastructure/
-COPY src/CulinaryBlog.API/CulinaryBlog.API.csproj src/CulinaryBlog.API/
+WORKDIR /src
+COPY src/CulinaryBlog.Domain/*.csproj src/CulinaryBlog.Domain/
+COPY src/CulinaryBlog.Application/*.csproj src/CulinaryBlog.Application/
+COPY src/CulinaryBlog.Infrastructure/*.csproj src/CulinaryBlog.Infrastructure/
+COPY src/CulinaryBlog.API/*.csproj src/CulinaryBlog.API/
 RUN dotnet restore src/CulinaryBlog.API/CulinaryBlog.API.csproj
-
-# Copy full source and publish
 COPY . .
-WORKDIR /app/src/CulinaryBlog.API
-RUN dotnet publish -c Release -o /out
-
-# Runtime stage using official .NET 10 ASP.NET runtime
+RUN dotnet publish src/CulinaryBlog.API/CulinaryBlog.API.csproj -c Release -o /out --no-restore
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
 COPY --from=build /out .
-
+RUN mkdir -p /app/wwwroot/uploads && chown -R app:app /app/wwwroot
+USER app
 ENV ASPNETCORE_URLS=http://+:5000
-ENV ASPNETCORE_ENVIRONMENT=Development
 EXPOSE 5000
-
 ENTRYPOINT ["dotnet", "CulinaryBlog.API.dll"]

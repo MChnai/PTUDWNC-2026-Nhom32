@@ -14,6 +14,7 @@ public class RecipeImageConfiguration : IEntityTypeConfiguration<RecipeImage>
         builder.Property(img => img.Id).HasColumnName("id");
         builder.Property(img => img.RecipeId).HasColumnName("recipe_id").IsRequired();
         builder.Property(img => img.OriginalUrl).HasColumnName("original_url").HasMaxLength(500).IsRequired();
+        builder.Property(img => img.MediumUrl).HasColumnName("medium_url").HasMaxLength(500);
         builder.Property(img => img.ThumbnailUrl).HasColumnName("thumbnail_url").HasMaxLength(500);
         builder.Property(img => img.AltText).HasColumnName("alt_text").HasMaxLength(200);
         builder.Property(img => img.IsPrimary).HasColumnName("is_primary").HasDefaultValue(false);

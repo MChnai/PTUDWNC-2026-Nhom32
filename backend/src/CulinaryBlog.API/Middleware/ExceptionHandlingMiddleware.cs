@@ -1,74 +1,27 @@
-using System.Diagnostics;
-using System.Text.Json;
 using FluentValidation;
-using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 namespace CulinaryBlog.API.Middleware;
-
-public class ExceptionHandlingMiddleware
+public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
 {
-    private readonly RequestDelegate _next;
-    private readonly ILogger<ExceptionHandlingMiddleware> _logger;
-
-    public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
+    public async Task InvokeAsync(HttpContext http)
     {
-        _next = next;
-        _logger = logger;
-    }
-
-    public async Task InvokeAsync(HttpContext context)
-    {
-        try
+        try { await next(http); }
+        catch (Exception error) when (!http.Response.HasStarted)
         {
-            await _next(context);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An unhandled exception occurred: {Message}", ex.Message);
-            await HandleExceptionAsync(context, ex);
-        }
-    }
-
-    private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
-    {
-        context.Response.ContentType = "application/problem+json";
-
-        var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
-
-        if (exception is ValidationException validationException)
-        {
-            context.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
-
-            var errors = validationException.Errors
-                .GroupBy(e => e.PropertyName)
-                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
-
-            var problem = new ValidationProblemDetails(errors)
+            if (error is OperationCanceledException && http.RequestAborted.IsCancellationRequested) return;
+            logger.LogError(error, "Request failed: {Path}", http.Request.Path);
+            IResult result = error switch
             {
-                Type = "https://tools.ietf.org/html/rfc9110#section-15.5.21",
-                Title = "Validation Failed",
-                Status = StatusCodes.Status422UnprocessableEntity,
-                Detail = "One or more validation errors occurred.",
-                Instance = context.Request.Path
+                ValidationException e => Results.ValidationProblem(e.Errors.GroupBy(x => x.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(x => x.ErrorMessage).ToArray()), statusCode: 422, title: "Vui lòng kiểm tra thông tin"),
+                DbUpdateConcurrencyException => Results.Problem(statusCode: 409, detail: "Dữ liệu đã thay đổi. Hãy tải lại trước khi tiếp tục."),
+                DbUpdateException { InnerException: PostgresException { SqlState: "23505" } } => Results.Problem(statusCode: 409, detail: "Tên, email hoặc dữ liệu đã tồn tại."),
+                DbUpdateException { InnerException: PostgresException { SqlState: "23503" } } => Results.Problem(statusCode: 409, detail: "Dữ liệu đang được sử dụng hoặc không còn tồn tại."),
+                BadHttpRequestException => Results.Problem(statusCode: 400, detail: "Nội dung yêu cầu không hợp lệ."),
+                _ => Results.Problem(statusCode: 500, title: "Đã xảy ra lỗi", detail: "Vui lòng thử lại sau.", extensions: new Dictionary<string, object?> { ["traceId"] = http.TraceIdentifier })
             };
-            problem.Extensions.Add("traceId", traceId);
-
-            await context.Response.WriteAsync(JsonSerializer.Serialize(problem));
-            return;
+            await result.ExecuteAsync(http);
         }
-
-        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-
-        var defaultProblem = new ProblemDetails
-        {
-            Type = "https://tools.ietf.org/html/rfc9110#section-15.6.1",
-            Title = "An internal server error occurred.",
-            Status = StatusCodes.Status500InternalServerError,
-            Detail = exception.Message,
-            Instance = context.Request.Path
-        };
-        defaultProblem.Extensions.Add("traceId", traceId);
-
-        await context.Response.WriteAsync(JsonSerializer.Serialize(defaultProblem));
     }
 }

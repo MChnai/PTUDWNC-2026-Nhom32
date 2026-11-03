@@ -1,3 +1,4 @@
+using CulinaryBlog.Application.Common.Helpers;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Common.Models;
 using CulinaryBlog.Application.Features.Auth.DTOs;
@@ -20,17 +21,20 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
     private readonly IApplicationDbContext _context;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtService _jwtService;
+    private readonly IWelcomeEmailJobService _welcome;
     private readonly ILogger<RegisterCommandHandler> _logger;
 
     public RegisterCommandHandler(
         IApplicationDbContext context,
         IPasswordHasher passwordHasher,
         IJwtService jwtService,
+        IWelcomeEmailJobService welcome,
         ILogger<RegisterCommandHandler> logger)
     {
         _context = context;
         _passwordHasher = passwordHasher;
         _jwtService = jwtService;
+        _welcome = welcome;
         _logger = logger;
     }
 
@@ -63,6 +67,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
         // 5. Create ApplicationUser
         var user = ApplicationUser.Create(request.FullName.Trim(), normalizedEmail, normalizedUsername, "Author");
         user.PasswordHash = _passwordHasher.HashPassword(request.Password);
+        user.EmailConfirmed = false;
 
         _context.Users.Add(user);
 
@@ -77,7 +82,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
         {
             UserId = user.Id,
             User = user,
-            Token = refreshTokenString,
+            Token = TokenHash.Compute(refreshTokenString),
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             CreatedByIp = "127.0.0.1",
             CreatedAt = DateTime.UtcNow
@@ -86,11 +91,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<Au
         _context.RefreshTokens.Add(refreshToken);
         await _context.SaveChangesAsync(cancellationToken);
 
-        // 11. Trigger Welcome Email Background Job (Hangfire queue pattern)
-        _logger.LogInformation(
-            "[Hangfire BackgroundJob::Enqueue<WelcomeEmailJob>] Queued Welcome Email to {Email} for user {FullName}",
-            user.Email,
-            user.FullName);
+        _welcome.EnqueueWelcomeEmail(user.Email, user.FullName);
 
         // 12. Return AuthResponseDto
         var userDto = new UserDto(

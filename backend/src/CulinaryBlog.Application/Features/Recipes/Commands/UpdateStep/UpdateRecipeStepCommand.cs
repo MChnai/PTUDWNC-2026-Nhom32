@@ -31,7 +31,6 @@ public class UpdateRecipeStepCommandHandler : IRequestHandler<UpdateRecipeStepCo
     public async Task<Result<Unit>> Handle(UpdateRecipeStepCommand request, CancellationToken cancellationToken)
     {
         var recipe = await _context.Recipes
-            .AsNoTracking()
             .FirstOrDefaultAsync(
                 r => r.Id == request.RecipeId,
                 cancellationToken

@@ -1,3 +1,4 @@
+using CulinaryBlog.Application.Common.Helpers;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Common.Models;
 using CulinaryBlog.Application.Features.Auth.DTOs;
@@ -86,6 +87,11 @@ public class GoogleLoginCommandHandler : IRequestHandler<GoogleLoginCommand, Res
             }
         }
 
+        if (user.LockoutEnd > DateTimeOffset.UtcNow)
+            return Result<AuthResponseDto>.Failure("ACCOUNT_LOCKED", "Tài khoản đang bị khóa tạm thời.");
+
+        user.EmailConfirmed = true; // Endpoint has verified the signed Google ID token.
+
         // 9. Generate tokens
         var roles = new List<string> { user.Role };
         var accessToken = _jwtService.GenerateAccessToken(user, roles);
@@ -96,7 +102,7 @@ public class GoogleLoginCommandHandler : IRequestHandler<GoogleLoginCommand, Res
         {
             UserId = user.Id,
             User = user,
-            Token = refreshTokenString,
+            Token = TokenHash.Compute(refreshTokenString),
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             CreatedByIp = "127.0.0.1",
             CreatedAt = DateTime.UtcNow

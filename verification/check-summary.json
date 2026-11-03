@@ -1,0 +1,47 @@
+{
+  "date": "2026-11-03",
+  "backend": {
+    "sdk": "10.0.403",
+    "build": "passed",
+    "warnings": 0,
+    "errors": 0,
+    "unitTests": {
+      "passed": 13,
+      "total": 13
+    },
+    "apiChecks": {
+      "passed": 75,
+      "total": 75
+    },
+    "apiDatabase": "PostgreSQL 16.15",
+    "apiStorage": "Local",
+    "apiJobs": "InMemory",
+    "smokeAuthPermitLimit": 100,
+    "shippingAuthPermitLimit": 10
+  },
+  "frontend": {
+    "framework": "Next.js 16.4.4",
+    "productionBuild": "passed",
+    "nodeChecks": {
+      "passed": 10,
+      "total": 10
+    },
+    "productionNpmAudit": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "e2eScenariosListed": 5,
+    "e2eScenariosExecuted": 0
+  },
+  "limits": [
+    "Docker stack not executed",
+    "Google actual sign-in not executed",
+    "MinIO/SMTP/Redis/persistent Hangfire/OTLP not verified as a complete stack",
+    "Mobile visual QA not executed",
+    "No load/SLA/coverage/WCAG/Rich Results certification"
+  ]
+}

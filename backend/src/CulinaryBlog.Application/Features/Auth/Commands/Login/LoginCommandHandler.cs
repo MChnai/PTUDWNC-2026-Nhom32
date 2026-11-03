@@ -1,6 +1,7 @@
+using CulinaryBlog.Application.Common.Helpers;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Common.Models;
-using CulinaryBlog.Application.DTOs.Auth;
+using CulinaryBlog.Application.Features.Auth.DTOs;
 using CulinaryBlog.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -11,9 +12,9 @@ namespace CulinaryBlog.Application.Features.Auth.Commands.Login;
 public record LoginCommand(
     string Email,
     string Password
-) : IRequest<Result<AuthResponse>>;
+) : IRequest<Result<AuthResponseDto>>;
 
-public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResponse>>
+public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto>>
 {
     private readonly IApplicationDbContext _context;
     private readonly IPasswordHasher _passwordHasher;
@@ -32,7 +33,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
         _logger = logger;
     }
 
-    public async Task<Result<AuthResponse>> Handle(LoginCommand request, CancellationToken cancellationToken)
+    public async Task<Result<AuthResponseDto>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
 
@@ -42,7 +43,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
 
         if (user == null)
         {
-            return Result<AuthResponse>.Failure(
+            return Result<AuthResponseDto>.Failure(
                 "INVALID_CREDENTIALS",
                 "Invalid email or password.");
         }
@@ -52,7 +53,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
         {
             var remaining = user.LockoutEnd.Value - DateTimeOffset.UtcNow;
             _logger.LogWarning("Login rejected for locked out account {Email}. Remaining minutes: {Minutes}", user.Email, remaining.TotalMinutes);
-            return Result<AuthResponse>.Failure(
+            return Result<AuthResponseDto>.Failure(
                 "ACCOUNT_LOCKED",
                 $"Account is temporarily locked. Try again in {Math.Ceiling(remaining.TotalMinutes)} minute(s).");
         }
@@ -70,7 +71,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
 
             await _context.SaveChangesAsync(cancellationToken);
 
-            return Result<AuthResponse>.Failure(
+            return Result<AuthResponseDto>.Failure(
                 "INVALID_CREDENTIALS",
                 "Invalid email or password.");
         }
@@ -99,7 +100,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
         {
             UserId = user.Id,
             User = user,
-            Token = refreshTokenString,
+            Token = TokenHash.Compute(refreshTokenString),
             ExpiresAt = refreshTokenExpiresAt,
             CreatedByIp = "127.0.0.1",
             CreatedAt = DateTime.UtcNow
@@ -109,16 +110,9 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
         await _context.SaveChangesAsync(cancellationToken);
 
         // 7. Map to AuthResponse DTO
-        var response = new AuthResponse(
-            user.Id,
-            user.Username,
-            user.Email,
-            user.Role,
-            accessToken,
-            refreshTokenString,
-            refreshTokenExpiresAt
-        );
+        var response = new AuthResponseDto(accessToken, refreshTokenString, _jwtService.GetAccessTokenExpiration(),
+            new UserDto(user.Id, user.FullName, user.Email, user.Username, user.AvatarUrl, roles));
 
-        return Result<AuthResponse>.Success(response);
+        return Result<AuthResponseDto>.Success(response);
     }
 }

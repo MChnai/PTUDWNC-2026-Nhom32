@@ -1,0 +1,456 @@
+{
+  "checks": 75,
+  "passed": 75,
+  "results": [
+    {
+      "name": "Liveness",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Readiness",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Category list",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Public list",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Pagination clamps to 50",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Invalid page rejected",
+      "passed": true,
+      "expectedStatus": 422,
+      "actualStatus": 422
+    },
+    {
+      "name": "Invalid enum rejected",
+      "passed": true,
+      "expectedStatus": 422,
+      "actualStatus": 422
+    },
+    {
+      "name": "Invalid sort rejected",
+      "passed": true,
+      "expectedStatus": 422,
+      "actualStatus": 422
+    },
+    {
+      "name": "Search requires two characters",
+      "passed": true,
+      "expectedStatus": 422,
+      "actualStatus": 422
+    },
+    {
+      "name": "Empty search rejected",
+      "passed": true,
+      "expectedStatus": 422,
+      "actualStatus": 422
+    },
+    {
+      "name": "Unaccented search",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Filter difficulty/time/servings",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Anonymous write denied",
+      "passed": true,
+      "expectedStatus": 401,
+      "actualStatus": 401
+    },
+    {
+      "name": "Weak password rejected",
+      "passed": true,
+      "expectedStatus": 422,
+      "actualStatus": 422
+    },
+    {
+      "name": "Register owner",
+      "passed": true,
+      "expectedStatus": 201,
+      "actualStatus": 201
+    },
+    {
+      "name": "Register other",
+      "passed": true,
+      "expectedStatus": 201,
+      "actualStatus": 201
+    },
+    {
+      "name": "Duplicate email is 409",
+      "passed": true,
+      "expectedStatus": 409,
+      "actualStatus": 409
+    },
+    {
+      "name": "Invalid login is 401",
+      "passed": true,
+      "expectedStatus": 401,
+      "actualStatus": 401
+    },
+    {
+      "name": "Profile is private",
+      "passed": true,
+      "expectedStatus": 401,
+      "actualStatus": 401
+    },
+    {
+      "name": "Profile read",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Profile edit",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Unsafe avatar rejected",
+      "passed": true,
+      "expectedStatus": 422,
+      "actualStatus": 422
+    },
+    {
+      "name": "Author cannot manage categories",
+      "passed": true,
+      "expectedStatus": 403,
+      "actualStatus": 403
+    },
+    {
+      "name": "Admin login",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Admin create category",
+      "passed": true,
+      "expectedStatus": 201,
+      "actualStatus": 201
+    },
+    {
+      "name": "Admin update category",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Admin delete empty category",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Create draft with complete content",
+      "passed": true,
+      "expectedStatus": 201,
+      "actualStatus": 201
+    },
+    {
+      "name": "Owner reads draft",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Draft not public",
+      "passed": true,
+      "expectedStatus": 404,
+      "actualStatus": 404
+    },
+    {
+      "name": "Draft ingredients not public",
+      "passed": true,
+      "expectedStatus": 404,
+      "actualStatus": 404
+    },
+    {
+      "name": "Draft steps not public",
+      "passed": true,
+      "expectedStatus": 404,
+      "actualStatus": 404
+    },
+    {
+      "name": "Other author cannot read draft",
+      "passed": true,
+      "expectedStatus": 404,
+      "actualStatus": 404
+    },
+    {
+      "name": "Management scoped to owner",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Management hides foreign recipes",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Foreign update forbidden",
+      "passed": true,
+      "expectedStatus": 403,
+      "actualStatus": 403
+    },
+    {
+      "name": "Foreign step deletion forbidden",
+      "passed": true,
+      "expectedStatus": 403,
+      "actualStatus": 403
+    },
+    {
+      "name": "Missing If-Match rejected",
+      "passed": true,
+      "expectedStatus": 428,
+      "actualStatus": 428
+    },
+    {
+      "name": "Foreign child IDs rejected atomically",
+      "passed": true,
+      "expectedStatus": 422,
+      "actualStatus": 422
+    },
+    {
+      "name": "Save metadata/nutrition/steps/ingredients atomically",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Stale update returns 409",
+      "passed": true,
+      "expectedStatus": 409,
+      "actualStatus": 409
+    },
+    {
+      "name": "Publish draft",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Publish idempotent",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Public slug route",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Record published recipe view",
+      "passed": true,
+      "expectedStatus": 204,
+      "actualStatus": 204
+    },
+    {
+      "name": "SRS direct slug route",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Public child read",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Private category cannot be deleted when populated",
+      "passed": true,
+      "expectedStatus": 409,
+      "actualStatus": 409
+    },
+    {
+      "name": "Delete a step and renumber",
+      "passed": true,
+      "expectedStatus": 204,
+      "actualStatus": 204
+    },
+    {
+      "name": "Remaining step renumbered to 1",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Cannot delete final published step",
+      "passed": true,
+      "expectedStatus": 422,
+      "actualStatus": 422
+    },
+    {
+      "name": "Forged image rejected",
+      "passed": true,
+      "expectedStatus": 400,
+      "actualStatus": 400
+    },
+    {
+      "name": "RIFF audio cannot spoof WebP",
+      "passed": true,
+      "expectedStatus": 400,
+      "actualStatus": 400
+    },
+    {
+      "name": "Generic image upload uses configured provider",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Author cannot delete arbitrary generic media",
+      "passed": true,
+      "expectedStatus": 403,
+      "actualStatus": 403
+    },
+    {
+      "name": "Admin deletes generic media via same provider",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Valid image upload sanitizes filename",
+      "passed": true,
+      "expectedStatus": 201,
+      "actualStatus": 201
+    },
+    {
+      "name": "Set primary image",
+      "passed": true,
+      "expectedStatus": 204,
+      "actualStatus": 204
+    },
+    {
+      "name": "Delete image",
+      "passed": true,
+      "expectedStatus": 204,
+      "actualStatus": 204
+    },
+    {
+      "name": "Archive hides public recipe",
+      "passed": true,
+      "expectedStatus": 204,
+      "actualStatus": 204
+    },
+    {
+      "name": "Archived hidden from guest",
+      "passed": true,
+      "expectedStatus": 404,
+      "actualStatus": 404
+    },
+    {
+      "name": "Unarchive returns draft",
+      "passed": true,
+      "expectedStatus": 204,
+      "actualStatus": 204
+    },
+    {
+      "name": "Delete owned recipe",
+      "passed": true,
+      "expectedStatus": 204,
+      "actualStatus": 204
+    },
+    {
+      "name": "Deleted recipe absent",
+      "passed": true,
+      "expectedStatus": 404,
+      "actualStatus": 404
+    },
+    {
+      "name": "Draft without steps allowed",
+      "passed": true,
+      "expectedStatus": 201,
+      "actualStatus": 201
+    },
+    {
+      "name": "Cannot publish without steps",
+      "passed": true,
+      "expectedStatus": 422,
+      "actualStatus": 422
+    },
+    {
+      "name": "Delete empty draft",
+      "passed": true,
+      "expectedStatus": 204,
+      "actualStatus": 204
+    },
+    {
+      "name": "Google configuration status",
+      "passed": true,
+      "expectedStatus": 503,
+      "actualStatus": 503
+    },
+    {
+      "name": "Refresh rotates token",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    },
+    {
+      "name": "Reuse old refresh token denied",
+      "passed": true,
+      "expectedStatus": 401,
+      "actualStatus": 401
+    },
+    {
+      "name": "Reused family revoked",
+      "passed": true,
+      "expectedStatus": 401,
+      "actualStatus": 401
+    },
+    {
+      "name": "Logout",
+      "passed": true,
+      "expectedStatus": 204,
+      "actualStatus": 204
+    },
+    {
+      "name": "Logged-out refresh denied",
+      "passed": true,
+      "expectedStatus": 401,
+      "actualStatus": 401
+    },
+    {
+      "name": "Author cannot access job dashboard",
+      "passed": true,
+      "expectedStatus": 403,
+      "actualStatus": 403
+    },
+    {
+      "name": "Admin dashboard",
+      "passed": true,
+      "expectedStatus": 200,
+      "actualStatus": 200
+    }
+  ]
+}

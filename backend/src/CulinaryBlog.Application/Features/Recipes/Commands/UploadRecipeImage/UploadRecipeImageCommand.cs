@@ -24,21 +24,22 @@ public class UploadRecipeImageCommandHandler : IRequestHandler<UploadRecipeImage
 {
     private readonly IApplicationDbContext _context;
     private readonly IFileStorageService _fileStorageService;
+    private readonly IBackgroundJobService _jobs;
+    private readonly IImageInspector _inspector;
 
-    public UploadRecipeImageCommandHandler(IApplicationDbContext context, IFileStorageService fileStorageService)
+    public UploadRecipeImageCommandHandler(IApplicationDbContext context, IFileStorageService fileStorageService, IBackgroundJobService jobs, IImageInspector inspector)
     {
         _context = context;
         _fileStorageService = fileStorageService;
+        _jobs = jobs;
+        _inspector = inspector;
     }
 
     public async Task<Result<RecipeImageDto>> Handle(UploadRecipeImageCommand request, CancellationToken cancellationToken)
     {
-        // 1. Kiểm tra File (5MB, MIME, Magic Bytes)
-        var (isValid, errorMessage) = await FileValidationHelper.ValidateImageAsync(request.File);
-        if (!isValid)
-        {
-            return Result<RecipeImageDto>.Failure("INVALID_FILE", errorMessage!);
-        }
+        var error = await _inspector.ValidateAsync(request.File, cancellationToken);
+        if (error != null) return Result<RecipeImageDto>.Failure("INVALID_FILE", error);
+        if (request.AltText?.Length > 200) return Result<RecipeImageDto>.Failure("INVALID_DATA", "Mô tả ảnh tối đa 200 ký tự.");
 
         // 2. Kiểm tra tồn tại công thức & Phân quyền
         var recipe = await _context.Recipes
@@ -59,8 +60,10 @@ public class UploadRecipeImageCommandHandler : IRequestHandler<UploadRecipeImage
             return Result<RecipeImageDto>.Failure("FORBIDDEN", "Bạn không có quyền quản lý ảnh của công thức này.");
         }
 
+        if (recipe.Images.Count >= 12) return Result<RecipeImageDto>.Failure("INVALID_DATA", "Mỗi công thức tối đa 12 ảnh.");
+
         // 3. Upload file lên MinIO
-        var fileUrl = await _fileStorageService.UploadFileAsync(request.File, "recipes", cancellationToken);
+        var fileUrl = await _fileStorageService.UploadFileAsync(request.File, $"recipes/{recipe.Id}", cancellationToken);
 
         // 4. Xử lý logic IsPrimary (Nếu chọn primary thì bỏ primary của các ảnh khác)
         if (request.IsPrimary || !recipe.Images.Any())
@@ -84,6 +87,8 @@ public class UploadRecipeImageCommandHandler : IRequestHandler<UploadRecipeImage
 
         _context.RecipeImages.Add(newImage);
         await _context.SaveChangesAsync(cancellationToken);
+
+        _jobs.Enqueue<IRecipeThumbnailJob>(job => job.ExecuteAsync(newImage.Id));
 
         var dto = new RecipeImageDto
         {

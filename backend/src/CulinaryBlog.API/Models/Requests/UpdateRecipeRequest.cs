@@ -1,17 +1,9 @@
+using CulinaryBlog.Application.Features.Recipes.DTOs;
 using CulinaryBlog.Domain.Enums;
 using CulinaryBlog.Domain.ValueObjects;
 
 namespace CulinaryBlog.API.Models.Requests;
 
-public record UpdateRecipeRequest
-{
-    public string Title { get; init; } = string.Empty;
-    public string Summary { get; init; } = string.Empty;
-    public string Description { get; init; } = string.Empty;
-    public int PrepTimeMinutes { get; init; }
-    public int CookTimeMinutes { get; init; }
-    public int Servings { get; init; }
-    public RecipeDifficulty Difficulty { get; init; }
-    public Guid CategoryId { get; init; }
-    public RecipeNutrition? Nutrition { get; init; }
-}
+public record UpdateRecipeRequest(string Title, string Description, int PrepTimeMinutes, int CookTimeMinutes,
+    int Servings, RecipeDifficulty Difficulty, Guid CategoryId, RecipeNutrition? Nutrition,
+    List<IngredientInput>? Ingredients, List<StepInput>? Steps, string? Instructions = null, string? Notes = null);

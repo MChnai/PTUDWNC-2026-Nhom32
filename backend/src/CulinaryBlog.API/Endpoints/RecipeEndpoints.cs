@@ -1,29 +1,30 @@
 using System.Security.Claims;
-using CulinaryBlog.Application.Common.Models;
+using Microsoft.Extensions.Caching.Memory;
+using CulinaryBlog.Application.Features.Recipes.Commands.RecordRecipeView;
+using CulinaryBlog.API.Models.Requests;
+using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Features.Recipes.Commands.CreateRecipe;
-using CulinaryBlog.Application.Features.Recipes.DTOs;
-using CulinaryBlog.Application.Features.Recipes.Queries.GetRecipes;
-using CulinaryBlog.Application.Features.Recipes.Commands.ChangeRecipeStatus;
 using CulinaryBlog.Application.Features.Recipes.Commands.UpdateRecipe;
+using CulinaryBlog.Application.Features.Recipes.Commands.ChangeRecipeStatus;
 using CulinaryBlog.Application.Features.Recipes.Commands.ArchiveRecipe;
 using CulinaryBlog.Application.Features.Recipes.Commands.DeleteRecipe;
-using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using CulinaryBlog.API.Models.Requests;
-using CulinaryBlog.Domain.Enums;
 using CulinaryBlog.Application.Features.Recipes.Commands.UploadRecipeImage;
-using CulinaryBlog.Application.Features.Recipes.Commands.SetPrimaryImage;
 using CulinaryBlog.Application.Features.Recipes.Commands.DeleteRecipeImage;
+using CulinaryBlog.Application.Features.Recipes.Commands.SetPrimaryImage;
 using CulinaryBlog.Application.Features.Recipes.Commands.AddIngredient;
-using CulinaryBlog.Application.Features.Recipes.Commands.DeleteIngredient;
 using CulinaryBlog.Application.Features.Recipes.Commands.UpdateIngredient;
-using CulinaryBlog.Application.Features.Recipes.Queries.GetSteps;
+using CulinaryBlog.Application.Features.Recipes.Commands.DeleteIngredient;
 using CulinaryBlog.Application.Features.Recipes.Commands.AddStep;
 using CulinaryBlog.Application.Features.Recipes.Commands.UpdateStep;
 using CulinaryBlog.Application.Features.Recipes.Commands.DeleteStep;
+using CulinaryBlog.Application.Features.Recipes.DTOs;
+using CulinaryBlog.Application.Features.Recipes.Queries.GetRecipes;
 using CulinaryBlog.Application.Features.Recipes.Queries.GetRecipeById;
-using CulinaryBlog.Application.Features.Recipes.Queries.GetIngredients;
-using CulinaryBlog.Application.Features.Recipes.Queries.SearchRecipes;
+using CulinaryBlog.Application.Features.Recipes.Queries.GetManagedRecipes;
+using CulinaryBlog.Domain.Enums;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.API.Endpoints;
 
@@ -31,543 +32,188 @@ public static class RecipeEndpoints
 {
     public static void MapRecipeEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/recipes").WithTags("Recipes");
-
-        // FR-RCP-001: Xem Danh sách Công thức (Public)
-        group.MapGet("/", async (
-            [FromQuery] int? pageNumber,
-            [FromQuery] int? pageSize,
-            [FromQuery] Guid? categoryId,
-            [FromQuery] int? difficulty,
-            [FromQuery] int? maxTotalTime,
-            [FromQuery] string? searchTerm,
-            [FromQuery] string? sortBy,
-            [FromQuery] string? sortDirection,
-            ISender mediator = null!,
-            CancellationToken cancellationToken = default) =>
+        var g = app.MapGroup("/recipes").WithTags("Recipes");
+        g.MapGet("/", List).CacheOutput("public-recipes");
+        g.MapGet("/search", List);
+        g.MapGet("/manage", async (ClaimsPrincipal user, int? page, int? pageNumber, int? pageSize, RecipeStatus? status,
+            Guid? categoryId, ISender sender, CancellationToken ct) =>
         {
-            // Dùng Named Arguments khớp với GetRecipesQuery
-            var query = new GetRecipesQuery(
-                PageNumber: pageNumber ?? 1,
-                PageSize: pageSize ?? 10,
-                CategoryId: categoryId,
-                Difficulty: difficulty,
-                MaxTotalTime: maxTotalTime,
-                SearchTerm: searchTerm,
-                SortBy: sortBy ?? "createdAt",
-                SortDirection: sortDirection ?? "desc"
-            );
-
-            var result = await mediator.Send(query, cancellationToken);
-
-            if (!result.IsSuccess)
-            {
-                return Results.BadRequest(new
-                {
-                    code = result.ErrorCode,
-                    message = result.ErrorMessage
-                });
-            }
-
-            return Results.Ok(result);
-        })
-        .WithName("GetRecipes")
-        .WithSummary("Xem danh sách công thức (FR-RCP-001)")
-        .Produces<Result<PaginatedList<RecipeDto>>>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status400BadRequest)
-        .AllowAnonymous();
-
-        // GET /api/v1/recipes/{id}
-        group.MapGet("/{id:guid}", async (
-            Guid id,
-            ClaimsPrincipal user,
-            ISender mediator,
-            CancellationToken cancellationToken) =>
+            var result = await sender.Send(new GetManagedRecipesQuery(user, page ?? pageNumber ?? 1,
+                Math.Clamp(pageSize ?? 12, 1, 50), status, categoryId), ct);
+            return result.IsSuccess ? Results.Ok(result) : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
+        g.MapGet("/by-slug/{slug}", async (string slug, ClaimsPrincipal user, IApplicationDbContext db, ISender sender, HttpContext http, CancellationToken ct) =>
         {
-            var query = new GetRecipeByIdQuery(id, user);
-
-            var result = await mediator.Send(
-                query,
-                cancellationToken
-            );
-
-            if (!result.IsSuccess)
-            {
-                return Results.NotFound(result);
-            }
-
-            return Results.Ok(result);
-        })
-        .WithName("GetRecipeDetail")
-        .WithSummary("Lấy chi tiết công thức")
-        .AllowAnonymous()
-        .Produces<Result<RecipeDetailDto>>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status404NotFound);
-
-        // FR-RCP-003: Tạo Công thức Mới (Author, Admin)
-        group.MapPost("/", async (
-            [FromBody] CreateRecipeCommand command,
-            ClaimsPrincipal user,
-            ISender mediator,
-            CancellationToken cancellationToken) =>
-        {
-            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!Guid.TryParse(userIdClaim, out var authorId))
-            {
-                return Results.Unauthorized();
-            }
-
-            var commandWithAuthor = command with { AuthorId = authorId };
-            var result = await mediator.Send(commandWithAuthor, cancellationToken);
-
-            if (!result.IsSuccess)
-            {
-                return Results.BadRequest(result);
-            }
-            return Results.Created($"/api/v1/recipes/{result.Value}", result);
-        })
-        .WithName("CreateRecipe")
-        .WithSummary("Tạo công thức mới (Trạng thái Draft)")
-        .WithDescription("Khởi tạo bài viết công thức mới ở trạng thái Draft. Cho phép đính kèm Steps, Ingredients, Nutrition.")
-        .RequireAuthorization(policy => policy.RequireRole("Author", "Admin"))
-        .Produces<Result<Guid>>(StatusCodes.Status201Created)
-        .Produces<Result<Guid>>(StatusCodes.Status400BadRequest)
-        .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status403Forbidden);
-
-        // FR-RCP-004: Cập nhật Công thức (Author, Admin)
-        group.MapPut("/{id:guid}", async (
-            Guid id,
-            [FromHeader(Name = "If-Match")] string? ifMatch,
-            [FromBody] UpdateRecipeRequest request,
-            ClaimsPrincipal user,
-            ISender mediator,
-            CancellationToken cancellationToken) =>
-        {
-            // 1. Kiểm tra ETag / If-Match header
-            if (string.IsNullOrWhiteSpace(ifMatch))
-            {
-                return Results.BadRequest(Result<Unit>.Failure("MISSING_HEADER", "Thiếu header 'If-Match' (RowVersion)."));
-            }
-
-            var cleanETag = ifMatch.Trim('"');
-            if (!uint.TryParse(cleanETag, out var rowVersion))
-            {
-                return Results.BadRequest(Result<Unit>.Failure("INVALID_FORMAT", "Header 'If-Match' phải là số nguyên không âm (uint)."));
-            }
-
-            // 2. Map dữ liệu sang Command
-            var command = new UpdateRecipeCommand
-            {
-                Id = id,
-                Title = request.Title,
-                Description = request.Description,
-                PrepTimeMinutes = request.PrepTimeMinutes,
-                CookTimeMinutes = request.CookTimeMinutes,
-                Servings = request.Servings,
-                Difficulty = request.Difficulty,
-                CategoryId = request.CategoryId,
-                RowVersion = rowVersion,
-                CurrentUser = user
-            };
-
-            var result = await mediator.Send(command, cancellationToken);
-
-            // 3. Phản hồi HTTP Response
-            if (!result.IsSuccess)
-            {
-                return Results.BadRequest(result);
-            }
-
-            return Results.NoContent();
-        })
-        .WithName("UpdateRecipe")
-        .WithSummary("Cập nhật thông tin công thức")
-        .WithDescription("Yêu cầu quyền Author (chủ sở hữu) hoặc Admin. Bắt buộc truyền `If-Match` header chứa RowVersion (uint) để kiểm soát Concurrency Control.")
-        .RequireAuthorization(policy => policy.RequireRole("Author", "Admin"))
-        .Produces(StatusCodes.Status204NoContent)
-        .Produces<Result<Unit>>(StatusCodes.Status400BadRequest)
-        .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status403Forbidden)
-        .Produces(StatusCodes.Status404NotFound)
-        .Produces(StatusCodes.Status412PreconditionFailed);
-
-        // FR-RCP-005: Xuất bản / Hủy Xuất bản Công thức (Author, Admin)
-        group.MapPatch("/{id:guid}/status", async (
-            Guid id,
-            [FromBody] ChangeRecipeStatusRequest request,
-            ClaimsPrincipal user,
-            ISender mediator,
-            CancellationToken cancellationToken) =>
-        {
-            var command = new ChangeRecipeStatusCommand
-            {
-                Id = id,
-                Status = request.Status,
-                CurrentUser = user
-            };
-
-            var result = await mediator.Send(command, cancellationToken);
-
-            if (!result.IsSuccess)
-            {
-                return Results.BadRequest(result);
-            }
-
-            return Results.NoContent();
-        })
-        .WithName("ChangeRecipeStatus")
-        .WithSummary("Xuất bản hoặc Hủy xuất bản công thức (Draft / Published)")
-        .WithDescription("Yêu cầu quyền Author (chủ sở hữu) hoặc Admin. Quy tắc: Công thức phải có ít nhất 1 bước thực hiện mới được phép Xuất bản (Published).")
-        .RequireAuthorization(policy => policy.RequireRole("Author", "Admin"))
-        .Produces(StatusCodes.Status204NoContent)
-        .Produces<Result<Unit>>(StatusCodes.Status400BadRequest)
-        .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status403Forbidden)
-        .Produces(StatusCodes.Status404NotFound);
-
-        // FR-RCP-006: Lưu trữ / Bỏ lưu trữ Công thức (Author, Admin)
-        group.MapPatch("/{id:guid}/archive", async (
-            Guid id,
-            [FromBody] ArchiveRecipeRequest request,
-            ClaimsPrincipal user,
-            ISender mediator,
-            CancellationToken cancellationToken) =>
-        {
-            var command = new ArchiveRecipeCommand
-            {
-                Id = id,
-                IsArchived = request.IsArchived,
-                CurrentUser = user
-            };
-
-            var result = await mediator.Send(command, cancellationToken);
-
-            if (!result.IsSuccess)
-            {
-                return Results.BadRequest(result);
-            }
-
-            return Results.NoContent();
-        })
-        .WithName("ArchiveRecipe")
-        .WithSummary("Lưu trữ hoặc Bỏ lưu trữ công thức (Archive / Unarchive)")
-        .WithDescription("Yêu cầu quyền Author (chủ sở hữu) hoặc Admin. Chuyển công thức sang trạng thái Archived để ẩn khỏi danh sách công khai mà không xóa dữ liệu.")
-        .RequireAuthorization(policy => policy.RequireRole("Author", "Admin"))
-        .Produces(StatusCodes.Status204NoContent)
-        .Produces<Result<Unit>>(StatusCodes.Status400BadRequest)
-        .Produces(StatusCodes.Status401Unauthorized)
-        .Produces(StatusCodes.Status403Forbidden)
-        .Produces(StatusCodes.Status404NotFound);
-
-        // FR-RCP-008.1: Upload ảnh công thức
-        group.MapPost("/{id:guid}/images", async (
-            Guid id,
-            IFormFile file,
-            [FromForm] string? altText,
-            [FromForm] bool isPrimary,
-            ClaimsPrincipal user,
-            ISender mediator,
-            CancellationToken cancellationToken) =>
-        {
-            var command = new UploadRecipeImageCommand
-            {
-                RecipeId = id,
-                File = file,
-                AltText = altText,
-                IsPrimary = isPrimary,
-                CurrentUser = user
-            };
-
-            var result = await mediator.Send(command, cancellationToken);
-
-            if (!result.IsSuccess)
-            {
-                return Results.BadRequest(result);
-            }
-
-            return Results.Created($"/api/recipes/{id}/images/{result.Value!.Id}", result);
-        })
-        .WithName("UploadRecipeImage")
-        .WithSummary("Tải lên ảnh mới cho công thức")
-        .WithDescription("FormData (tối đa 5MB, JPEG/PNG/WEBP, kiểm tra Magic Bytes).")
-        .RequireAuthorization(policy => policy.RequireRole("Author", "Admin"))
-        .DisableAntiforgery()
-        .Produces<Result<RecipeImageDto>>(StatusCodes.Status201Created)
-        .Produces<Result<RecipeImageDto>>(StatusCodes.Status400BadRequest);
-
-        // FR-RCP-008.2: Thiết lập ảnh đại diện (Primary)
-        group.MapPatch("/{id:guid}/images/{imageId:guid}/primary", async (
-            Guid id,
-            Guid imageId,
-            ClaimsPrincipal user,
-            ISender mediator,
-            CancellationToken cancellationToken) =>
-        {
-            var command = new SetPrimaryRecipeImageCommand(id, imageId, user);
-            var result = await mediator.Send(command, cancellationToken);
-
-            if (!result.IsSuccess)
-            {
-                return Results.BadRequest(result);
-            }
-
-            return Results.NoContent();
-        })
-        .WithName("SetPrimaryRecipeImage")
-        .WithSummary("Đặt ảnh làm đại diện (Primary)")
-        .RequireAuthorization(policy => policy.RequireRole("Author", "Admin"))
-        .Produces(StatusCodes.Status204NoContent)
-        .Produces<Result<Unit>>(StatusCodes.Status400BadRequest);
-
-        // FR-RCP-008.3: Xóa ảnh công thức
-        group.MapDelete("/{id:guid}/images/{imageId:guid}", async (
-            Guid id,
-            Guid imageId,
-            ClaimsPrincipal user,
-            ISender mediator,
-            CancellationToken cancellationToken) =>
-        {
-            var command = new DeleteRecipeImageCommand(id, imageId, user);
-            var result = await mediator.Send(command, cancellationToken);
-
-            if (!result.IsSuccess)
-            {
-                return Results.BadRequest(result);
-            }
-
-            return Results.NoContent();
-        })
-        .WithName("DeleteRecipeImage")
-        .WithSummary("Xóa ảnh công thức và dọn dẹp file MinIO qua Hangfire")
-        .RequireAuthorization(policy => policy.RequireRole("Author", "Admin"))
-        .Produces(StatusCodes.Status204NoContent)
-        .Produces<Result<Unit>>(StatusCodes.Status400BadRequest);
-
-        // FR-RCP-009: Quản lý Nguyên liệu (Tạo Sub-group riêng)
-        var ingredientGroup = group.MapGroup("/{recipeId:guid}/ingredients")
-                                   .WithTags("Recipe Ingredients");
-
-        // GET: Lấy danh sách nguyên liệu
-        ingredientGroup.MapGet("/", async (
-            Guid recipeId,
-            ISender mediator,
-            CancellationToken ct) =>
-        {
-            var query = new GetRecipeIngredientsQuery(recipeId);
-            var result = await mediator.Send(query, ct);
-            return result.IsSuccess ? Results.Ok(result) : Results.BadRequest(result);
+            var id = await db.Recipes.Where(r => r.Slug == slug).Select(r => (Guid?)r.Id).FirstOrDefaultAsync(ct);
+            return id.HasValue ? await Detail(id.Value, user, sender, http, ct) : Results.NotFound();
         });
-
-        // POST: Thêm nguyên liệu mới
-        ingredientGroup.MapPost("/", async (
-            Guid recipeId,
-            [FromBody] CreateIngredientRequest request,
-            ClaimsPrincipal user,
-            ISender mediator,
-            CancellationToken ct) =>
+        g.MapGet("/{id:guid}", Detail);
+        g.MapGet("/{slug}", async (string slug, ClaimsPrincipal user, IApplicationDbContext db, ISender sender, HttpContext http, CancellationToken ct) =>
         {
-            var command = new AddIngredientCommand
+            var id = await db.Recipes.Where(r => r.Slug == slug).Select(r => (Guid?)r.Id).FirstOrDefaultAsync(ct);
+            return id.HasValue ? await Detail(id.Value, user, sender, http, ct) : Results.NotFound();
+        });
+        g.MapPost("/{id:guid}/view", async (Guid id, HttpContext http, IMemoryCache cache, ISender sender, CancellationToken ct) =>
+        {
+            var key = $"view:{id}:{http.Connection.RemoteIpAddress}";
+            if (cache.TryGetValue(key, out _)) return Results.NoContent();
+            if (!await sender.Send(new RecordRecipeViewCommand(id), ct)) return Results.NotFound();
+            cache.Set(key, true, TimeSpan.FromMinutes(1));
+            return Results.NoContent();
+        });
+        g.MapPost("/", async (CreateRecipeCommand body, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
+        {
+            var result = await sender.Send(body with { AuthorId = UserId(user) }, ct);
+            return result.IsSuccess ? Results.Created($"/api/v1/recipes/{result.Value}", result) : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
+        g.MapPut("/{id:guid}", async (Guid id, UpdateRecipeRequest r, HttpContext http, ISender sender, CancellationToken ct) =>
+        {
+            if (!uint.TryParse(http.Request.Headers.IfMatch.ToString().Trim('"'), out var version))
+                return Results.Problem(statusCode: 428, detail: "Cần If-Match chứa RowVersion để lưu công thức.");
+            var result = await sender.Send(new UpdateRecipeCommand { Id = id, Title = r.Title, Description = r.Description,
+                Instructions = r.Instructions, Notes = r.Notes, PrepTimeMinutes = r.PrepTimeMinutes, CookTimeMinutes = r.CookTimeMinutes,
+                Servings = r.Servings, Difficulty = r.Difficulty, CategoryId = r.CategoryId, RowVersion = version,
+                Nutrition = r.Nutrition, Ingredients = r.Ingredients, Steps = r.Steps, CurrentUser = http.User }, ct);
+            return result.IsSuccess ? await Detail(id, http.User, sender, http, ct) : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
+        foreach (var action in new[] { "publish", "unpublish" })
+        {
+            var target = action == "publish" ? RecipeStatus.Published : RecipeStatus.Draft;
+            g.MapPatch($"/{{id:guid}}/{action}", async (Guid id, HttpContext http, ISender sender, CancellationToken ct) =>
             {
-                RecipeId = recipeId,
-                Name = request.Name,
-                Quantity = request.Quantity,
-                Unit = request.Unit,
-                Notes = request.Notes,
-                SortOrder = request.SortOrder,
-                CurrentUser = user
-            };
-
-            var result = await mediator.Send(command, ct);
-            return result.IsSuccess
-                ? Results.Created($"/api/recipes/{recipeId}/ingredients/{result.Value!.Id}", result)
-                : Results.BadRequest(result);
-        }).RequireAuthorization();
-
-        // PUT: Cập nhật nguyên liệu
-        ingredientGroup.MapPut("/{ingredientId:guid}", async (
-            Guid recipeId,
-            Guid ingredientId,
-            [FromBody] UpdateIngredientRequest request,
-            ClaimsPrincipal user,
-            ISender mediator,
-            CancellationToken ct) =>
+                var result = await sender.Send(new ChangeRecipeStatusCommand { Id = id, Status = target, CurrentUser = http.User }, ct);
+                return result.IsSuccess ? await Detail(id, http.User, sender, http, ct) : ApiResults.Error(result);
+            }).RequireAuthorization("Author");
+        }
+        g.MapPatch("/{id:guid}/status", async (Guid id, ChangeRecipeStatusRequest r, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
         {
-            var command = new UpdateIngredientCommand
-            {
-                RecipeId = recipeId,
-                IngredientId = ingredientId,
-                Name = request.Name,
-                Quantity = request.Quantity,
-                Unit = request.Unit,
-                Notes = request.Notes,
-                SortOrder = request.SortOrder,
-                CurrentUser = user
-            };
-
-            var result = await mediator.Send(command, ct);
-            return result.IsSuccess ? Results.Ok(result) : Results.BadRequest(result);
-        }).RequireAuthorization();
-
-        // DELETE: Xóa nguyên liệu
-        ingredientGroup.MapDelete("/{ingredientId:guid}", async (
-            Guid recipeId,
-            Guid ingredientId,
-            ClaimsPrincipal user,
-            ISender mediator,
-            CancellationToken ct) =>
+            var result = await sender.Send(new ChangeRecipeStatusCommand { Id = id, Status = r.Status, CurrentUser = user }, ct);
+            return result.IsSuccess ? Results.NoContent() : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
+        g.MapPatch("/{id:guid}/archive", async (Guid id, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
         {
-            var command = new DeleteIngredientCommand
-            {
-                RecipeId = recipeId,
-                IngredientId = ingredientId,
-                CurrentUser = user
-            };
-
-            var result = await mediator.Send(command, ct);
-            return result.IsSuccess ? Results.Ok(result) : Results.BadRequest(result);
-        }).RequireAuthorization();
-
-        // ==========================================
-        // FR-RCP-010: Quản lý Các bước Thực hiện (Steps)
-        // Sub-group: /api/recipes/{recipeId:guid}/steps
-        // ==========================================
-        var stepGroup = group.MapGroup("/{recipeId:guid}/steps")
-                            .WithTags("Recipe Steps");
-
-        // GET: Lấy danh sách các bước
-        stepGroup.MapGet("/", async (
-            Guid recipeId,
-            ISender mediator,
-            CancellationToken ct) =>
+            var result = await sender.Send(new ArchiveRecipeCommand { Id = id, IsArchived = true, CurrentUser = user }, ct);
+            return result.IsSuccess ? Results.NoContent() : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
+        g.MapPatch("/{id:guid}/unarchive", async (Guid id, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
         {
-            var query = new GetRecipeStepsQuery(recipeId);
-            var result = await mediator.Send(query, ct);
-            return result.IsSuccess ? Results.Ok(result) : Results.BadRequest(result);
-        })
-        .WithName("GetRecipeSteps")
-        .WithSummary("Lấy danh sách các bước thực hiện");
-
-        // POST: Thêm bước mới
-        stepGroup.MapPost("/", async (
-            Guid recipeId,
-            [FromBody] CreateRecipeStepRequest request,
-            ClaimsPrincipal user,
-            ISender mediator,
-            CancellationToken ct) =>
+            var result = await sender.Send(new ArchiveRecipeCommand { Id = id, IsArchived = false, CurrentUser = user }, ct);
+            return result.IsSuccess ? Results.NoContent() : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
+        g.MapDelete("/{id:guid}", async (Guid id, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
         {
-            var command = new AddRecipeStepCommand
-            {
-                RecipeId = recipeId,
-                Instruction = request.Instruction,
-                Title = request.Title,
-                Description = request.Instruction,
-                TimerMinutes = request.TimerMinutes,
-                ImageUrl = request.ImageUrl,
-                CurrentUser = user
-            };
+            var result = await sender.Send(new DeleteRecipeCommand(id, user), ct);
+            return result.IsSuccess ? Results.NoContent() : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
 
-            var result = await mediator.Send(command, ct);
-            return result.IsSuccess
-                ? Results.Created($"/api/recipes/{recipeId}/steps/{result.Value!.Id}", result)
-                : Results.BadRequest(result);
-        })
-        .WithName("AddRecipeStep")
-        .WithSummary("Thêm bước thực hiện mới")
-        .RequireAuthorization(policy => policy.RequireRole("Author", "Admin"));
-
-        // PUT: Cập nhật bước thực hiện
-        stepGroup.MapPut("/{stepId:guid}", async (
-            Guid recipeId,
-            Guid stepId,
-            [FromBody] UpdateRecipeStepRequest request,
-            ClaimsPrincipal user,
-            ISender mediator,
-            CancellationToken ct) =>
+        g.MapPost("/{id:guid}/images", async (Guid id, IFormFile file, [FromForm] string? altText,
+            [FromForm] bool? isPrimary, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
         {
-            var command = new UpdateRecipeStepCommand
-            {
-                RecipeId = recipeId,
-                StepId = stepId,
-                Instruction = request.Instruction,
-                ImageUrl = request.ImageUrl,
-                Title = request.Title,
-                Description = request.Instruction,
-                TimerMinutes = request.TimerMinutes,
-                CurrentUser = user
-            };
-
-            var result = await mediator.Send(command, ct);
-            return result.IsSuccess ? Results.Ok(result) : Results.BadRequest(result);
-        })
-        .WithName("UpdateRecipeStep")
-        .WithSummary("Cập nhật bước thực hiện")
-        .RequireAuthorization(policy => policy.RequireRole("Author", "Admin"));
-
-        // DELETE: Xóa bước thực hiện & Re-index
-        stepGroup.MapDelete("/{stepId:guid}", async (
-            Guid recipeId,
-            Guid stepId,
-            ClaimsPrincipal user,
-            ISender mediator,
-            CancellationToken ct) =>
+            var result = await sender.Send(new UploadRecipeImageCommand { RecipeId = id, File = file,
+                AltText = altText, IsPrimary = isPrimary ?? false, CurrentUser = user }, ct);
+            return result.IsSuccess ? Results.Created($"/api/v1/recipes/{id}/images/{result.Value!.Id}", result) : ApiResults.Error(result);
+        }).RequireAuthorization("Author").RequireRateLimiting("upload").DisableAntiforgery();
+        g.MapPatch("/{id:guid}/images/{imageId:guid}/primary", async (Guid id, Guid imageId, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
         {
-            var command = new DeleteRecipeStepCommand
-            {
-                RecipeId = recipeId,
-                StepId = stepId,
-                CurrentUser = user
-            };
-
-            var result = await mediator.Send(command, ct);
-            return result.IsSuccess ? Results.Ok(result) : Results.BadRequest(result);
-        })
-        .WithName("DeleteRecipeStep")
-        .WithSummary("Xóa bước thực hiện (Tự động sắp xếp lại StepNumber)")
-        .RequireAuthorization(policy => policy.RequireRole("Author", "Admin"));
-
-        // FR-SRCH-001/002/003/004: Tìm kiếm bài viết công thức toàn văn bản (Full-Text Search)
-        group.MapGet("/search", async (
-            [FromQuery] string? keyword,
-            [FromQuery] Guid? categoryId,
-            [FromQuery] int? difficulty,
-            [FromQuery] int? maxTotalTime,
-            [FromQuery] string? sortBy,
-            [FromQuery] string? sortDirection,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10,
-            ISender mediator = null!,
-            CancellationToken cancellationToken = default) =>
+            var result = await sender.Send(new SetPrimaryRecipeImageCommand(id, imageId, user), ct);
+            return result.IsSuccess ? Results.NoContent() : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
+        g.MapDelete("/{id:guid}/images/{imageId:guid}", async (Guid id, Guid imageId, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
         {
-            // Dùng Named Arguments để truyền đúng tham số
-            var query = new SearchRecipesQuery(
-                Keyword: keyword,
-                CategoryId: categoryId,
-                Difficulty: difficulty,
-                MaxTotalTime: maxTotalTime,
-                SortBy: sortBy ?? "rank",
-                SortDirection: sortDirection ?? "desc",
-                Page: page <= 0 ? 1 : page,
-                PageSize: pageSize <= 0 ? 10 : pageSize
-            );
+            var result = await sender.Send(new DeleteRecipeImageCommand(id, imageId, user), ct);
+            return result.IsSuccess ? Results.NoContent() : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
 
-            var result = await mediator.Send(query, cancellationToken);
-
-            if (!result.IsSuccess)
-            {
-                return Results.BadRequest(new
-                {
-                    code = result.ErrorCode,
-                    message = result.ErrorMessage
-                });
-            }
-
-            return Results.Ok(result);
-        })
-        .WithName("SearchRecipes")
-        .WithSummary("Tìm kiếm công thức toàn văn bản không dấu (FR-SRCH-001)")
-        .Produces<Result<PaginatedList<RecipeDto>>>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status400BadRequest)
-        .AllowAnonymous();
+        // Child read endpoints use the same visibility rules as the parent detail.
+        g.MapGet("/{id:guid}/ingredients", async (Guid id, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
+        {
+            var result = await sender.Send(new GetRecipeByIdQuery(id, user), ct);
+            return result.IsSuccess ? Results.Ok(result.Value!.Ingredients) : ApiResults.Error(result);
+        });
+        g.MapGet("/{id:guid}/steps", async (Guid id, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
+        {
+            var result = await sender.Send(new GetRecipeByIdQuery(id, user), ct);
+            return result.IsSuccess ? Results.Ok(result.Value!.Steps) : ApiResults.Error(result);
+        });
+        g.MapPost("/{id:guid}/ingredients", async (Guid id, CreateIngredientRequest r, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
+        {
+            var result = await sender.Send(new AddIngredientCommand { RecipeId = id, Name = r.Name, Quantity = r.Quantity,
+                Unit = r.Unit, Notes = r.Notes, SortOrder = r.SortOrder, CurrentUser = user }, ct);
+            return result.IsSuccess ? Results.Created($"/api/v1/recipes/{id}/ingredients/{result.Value!.Id}", result) : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
+        g.MapPut("/{id:guid}/ingredients/{ingredientId:guid}", async (Guid id, Guid ingredientId, UpdateIngredientRequest r, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
+        {
+            var result = await sender.Send(new UpdateIngredientCommand { RecipeId = id, IngredientId = ingredientId,
+                Name = r.Name, Quantity = r.Quantity, Unit = r.Unit, Notes = r.Notes, SortOrder = r.SortOrder, CurrentUser = user }, ct);
+            return result.IsSuccess ? Results.Ok(result) : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
+        g.MapDelete("/{id:guid}/ingredients/{ingredientId:guid}", async (Guid id, Guid ingredientId, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
+        {
+            var result = await sender.Send(new DeleteIngredientCommand { RecipeId = id, IngredientId = ingredientId, CurrentUser = user }, ct);
+            return result.IsSuccess ? Results.NoContent() : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
+        g.MapPost("/{id:guid}/steps", async (Guid id, CreateRecipeStepRequest r, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
+        {
+            var text = string.IsNullOrWhiteSpace(r.Description) ? r.Instruction : r.Description;
+            var result = await sender.Send(new AddRecipeStepCommand { RecipeId = id, Title = r.Title, Instruction = text,
+                Description = text, TimerMinutes = r.TimerMinutes, ImageUrl = r.ImageUrl, CurrentUser = user }, ct);
+            return result.IsSuccess ? Results.Created($"/api/v1/recipes/{id}/steps/{result.Value!.Id}", result) : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
+        g.MapPut("/{id:guid}/steps/{stepId:guid}", async (Guid id, Guid stepId, UpdateRecipeStepRequest r, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
+        {
+            var text = string.IsNullOrWhiteSpace(r.Description) ? r.Instruction : r.Description;
+            var result = await sender.Send(new UpdateRecipeStepCommand { RecipeId = id, StepId = stepId, Title = r.Title,
+                Description = text, Instruction = text, TimerMinutes = r.TimerMinutes, ImageUrl = r.ImageUrl, CurrentUser = user }, ct);
+            return result.IsSuccess ? Results.NoContent() : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
+        g.MapDelete("/{id:guid}/steps/{stepId:guid}", async (Guid id, Guid stepId, ClaimsPrincipal user, ISender sender, CancellationToken ct) =>
+        {
+            var result = await sender.Send(new DeleteRecipeStepCommand { RecipeId = id, StepId = stepId, CurrentUser = user }, ct);
+            return result.IsSuccess ? Results.NoContent() : ApiResults.Error(result);
+        }).RequireAuthorization("Author");
     }
+    private static async Task<IResult> Detail(Guid id, ClaimsPrincipal user, ISender sender, HttpContext http, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetRecipeByIdQuery(id, user), ct);
+        if (!result.IsSuccess) return ApiResults.Error(result);
+        http.Response.Headers.ETag = $"\"{result.Value!.RowVersion}\"";
+        http.Response.Headers.CacheControl = "no-store";
+        return Results.Ok(result);
+    }
+    private static async Task<IResult> List(HttpRequest req, ISender sender, CancellationToken ct)
+    {
+        var q = req.Query;
+        int? Number(string key) => int.TryParse(q[key], out var x) ? x : null;
+        var term = q["q"].FirstOrDefault() ?? q["keyword"].FirstOrDefault() ?? q["searchTerm"].FirstOrDefault();
+        var difficulty = q["difficulty"].FirstOrDefault();
+        int? difficultyValue = null;
+        if (!string.IsNullOrWhiteSpace(difficulty))
+        {
+            if (!Enum.TryParse<RecipeDifficulty>(difficulty, true, out var parsed) || !Enum.IsDefined(parsed))
+                return Results.Problem(statusCode: 422, detail: "Độ khó không hợp lệ.");
+            difficultyValue = (int)parsed;
+        }
+        if (req.Path.Value!.EndsWith("/search") && string.IsNullOrWhiteSpace(term))
+            return Results.Problem(statusCode: 422, detail: "Cần từ khóa có ít nhất 2 ký tự.");
+        var sort = q["sort"].FirstOrDefault();
+        var sortBy = sort?.TrimStart('-') ?? q["sortBy"].FirstOrDefault() ?? (term != null ? "rank" : "createdAt");
+        var direction = sort != null ? (sort.StartsWith('-') ? "desc" : "asc") : q["sortDirection"].FirstOrDefault() ?? q["sortOrder"].FirstOrDefault() ?? "desc";
+        if (!new[] { "createdat", "publishedat", "title", "cooktime", "totaltime", "views", "rating", "rank", "relevance" }.Contains(sortBy.ToLowerInvariant())
+            || direction is not ("asc" or "desc")) return Results.Problem(statusCode: 422, detail: "Tiêu chí sắp xếp không hợp lệ.");
+        Guid? categoryId = null;
+        if (q.ContainsKey("categoryId"))
+        {
+            if (!Guid.TryParse(q["categoryId"], out var category)) return Results.Problem(statusCode: 422, detail: "Danh mục không hợp lệ.");
+            categoryId = category;
+        }
+        foreach (var key in new[] { "page", "pageNumber", "pageSize", "maxTotalTime", "maxCookTime", "minServings" })
+            if (q.ContainsKey(key) && (!Number(key).HasValue || Number(key) <= 0 || Number(key) > 1000000))
+                return Results.Problem(statusCode: 422, detail: $"Tham số {key} phải là số nguyên dương, tối đa 1000000.");
+        var result = await sender.Send(new GetRecipesQuery(PageNumber: Number("page") ?? Number("pageNumber") ?? 1,
+            PageSize: Number("pageSize") ?? 12, CategoryId: categoryId, Difficulty: difficultyValue,
+            MaxTotalTime: Number("maxTotalTime"), SearchTerm: term, SortBy: sortBy, SortDirection: direction,
+            MaxCookTime: Number("maxCookTime"), MinServings: Number("minServings")), ct);
+        return result.IsSuccess ? Results.Ok(result) : ApiResults.Error(result);
+    }
+    private static Guid UserId(ClaimsPrincipal user) => Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
 }

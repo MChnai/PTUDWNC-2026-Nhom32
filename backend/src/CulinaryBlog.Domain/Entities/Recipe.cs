@@ -40,8 +40,10 @@ public class Recipe : BaseEntity
 
     public void Publish()
     {
+        if (Steps.Count == 0) throw new InvalidOperationException("Công thức phải có ít nhất một bước thực hiện.");
+        if (Status == RecipeStatus.Published) return;
         Status = RecipeStatus.Published;
-        PublishedAt = DateTime.UtcNow;
+        PublishedAt ??= DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
 

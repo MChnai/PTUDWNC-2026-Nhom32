@@ -42,7 +42,8 @@ public class CorrelationIdMiddleware
         if (context.Request.Headers.TryGetValue(CorrelationIdHeaderName, out var correlationId)
             && !string.IsNullOrWhiteSpace(correlationId))
         {
-            return correlationId.ToString();
+            var value = correlationId.ToString();
+            if (value.Length <= 64 && value.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_')) return value;
         }
 
         return Guid.NewGuid().ToString("N");
