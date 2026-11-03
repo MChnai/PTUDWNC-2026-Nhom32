@@ -86,8 +86,8 @@ public class GetManagedRecipesQueryHandler
                 r => r.CategoryId == request.CategoryId.Value);
         }
 
-        var page = Math.Max(1, request.PageNumber);
-        var size = Math.Clamp(request.PageSize, 1, 100);
+        var page = Math.Clamp(request.PageNumber, 1, 1000000);
+        var size = Math.Clamp(request.PageSize, 1, 50);
 
         var totalCount = await query.CountAsync(ct);
 

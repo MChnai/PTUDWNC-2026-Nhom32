@@ -4,8 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Minio;
 using Minio.DataModel.Args;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
+using ImageMagick;
 
 namespace CulinaryBlog.Infrastructure.Jobs;
 
@@ -57,20 +56,16 @@ public class GenerateThumbnailsJob
         {
             originalStream.Position = 0;
 
-            using var image = await Image.LoadAsync(originalStream);
-
-            image.Mutate(x => x.Resize(new ResizeOptions
-            {
-                Size = new Size(width, height),
-                Mode = ResizeMode.Max
-            }));
-
+            using var image = new MagickImage(originalStream);
+            image.AutoOrient();
+            image.Resize((uint)width, (uint)height);
+            image.Strip();
+            image.Format = MagickFormat.WebP;
             using var thumbStream = new MemoryStream();
-            var format = image.Metadata.DecodedImageFormat!;
-            await image.SaveAsync(thumbStream, format);
+            image.Write(thumbStream);
             thumbStream.Position = 0;
 
-            var thumbnailFileName = $"{baseName}_{suffix}{extension}";
+            var thumbnailFileName = $"{baseName}_{suffix}.webp";
 
             IFormFile formFile = new FormFile(
                 baseStream: thumbStream,
@@ -81,7 +76,7 @@ public class GenerateThumbnailsJob
             )
             {
                 Headers = new HeaderDictionary(),
-                ContentType = format.DefaultMimeType ?? "image/jpeg"
+                ContentType = "image/webp"
             };
 
             var thumbnailUrl = await _storageService.UploadFileAsync(formFile, bucketName);

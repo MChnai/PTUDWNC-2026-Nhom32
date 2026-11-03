@@ -1,182 +1,23 @@
-import React from 'react';
-import { ChefHat, Search, ShieldCheck, UserCheck, UserX, Database, Terminal, Activity, PlusCircle } from 'lucide-react';
-import type { ApplicationUser, UserRole } from '@/types';
-
-interface HeaderProps {
-  activeTab: 'explore' | 'dashboard' | 'api' | 'architecture' | 'monitor';
-  setActiveTab: (tab: 'explore' | 'dashboard' | 'api' | 'architecture' | 'monitor') => void;
-  currentUser: ApplicationUser | null;
-  onSwitchRole: (role: UserRole) => void;
-  onOpenNewRecipe: () => void;
-  onOpenSearch: () => void;
-  searchTerm: string;
-  onOpenAuth: (tab?: 'login' | 'register' | 'tokens') => void;
+'use client';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { ChefHat, Search, Bookmark, Menu, X, ArrowUpRight, UserRound, LogOut } from 'lucide-react';
+import { useAuth, useToast } from './Providers';
+export function Brand() { return <Link href="/" className="brand" aria-label="Culinary Blog — trang chủ"><span className="brand-icon"><ChefHat size={25} strokeWidth={1.7}/></span><span>Culinary<span className="brand-dot">.</span><small>NIỀM VUI TRONG GIAN BẾP</small></span></Link>; }
+export default function Header() {
+  const pathname = usePathname(); const router = useRouter(); const { user, logout } = useAuth(); const toast = useToast();
+  const [open, setOpen] = useState(false);
+  const links = [['/', 'Trang chủ'], ['/recipes', 'Công thức'], ['/categories', 'Danh mục'], ['/learn', 'Học nấu ăn']];
+  return <><div className="topbar"><span>Một chút cảm hứng. Một bữa ăn ngon.</span><span className="topbar-right">Nấu từ tâm, ngon mỗi ngày <span>✳</span></span></div>
+    <header className="site-header"><div className="container header-inner"><Brand/>
+      <nav className={open ? 'nav open' : 'nav'} aria-label="Điều hướng chính">
+        {links.map(([href, label]) => <Link key={href} href={href} onClick={() => setOpen(false)} className={(href === '/' ? pathname === '/' : pathname.startsWith(href)) ? 'active' : ''}>{label}</Link>)}
+        {!user && <Link className="mobile-auth-link" href="/login" onClick={() => setOpen(false)}>Đăng nhập</Link>}
+        {user && <Link href="/studio" onClick={() => setOpen(false)} className={pathname.startsWith('/studio') ? 'active' : ''}>Góc tác giả</Link>}
+      </nav>
+      <div className="header-actions"><Link href="/recipes?focus=search" className="icon-btn" aria-label="Tìm công thức"><Search size={20}/></Link><Link href="/saved" className="icon-btn saved-nav" aria-label="Công thức đã lưu"><Bookmark size={20}/></Link>
+        {user ? <div className="account-menu"><Link href="/profile" className="avatar" aria-label="Hồ sơ cá nhân">{user.fullName?.charAt(0) || <UserRound size={18}/>}{user.avatarUrl && <img src={user.avatarUrl} alt="" onError={e => { e.currentTarget.style.display = 'none'; }}/>}</Link><button className="icon-btn logout" aria-label="Đăng xuất" onClick={async () => { try { await logout(); router.push('/'); toast('Đã đăng xuất. Hẹn bạn ở bữa ăn tiếp theo!'); } catch(e) { toast((e as Error).message); } }}><LogOut size={18}/></button></div> : <Link href="/login" className="btn btn-small btn-dark login-btn">Vào bếp cùng nhau <ArrowUpRight size={15}/></Link>}
+        <button className="icon-btn menu-btn" aria-label={open ? 'Đóng menu' : 'Mở menu'} aria-expanded={open} onClick={() => setOpen(!open)}>{open ? <X/> : <Menu/>}</button>
+      </div></div></header></>;
 }
-
-export const Header: React.FC<HeaderProps> = ({
-  activeTab,
-  setActiveTab,
-  currentUser,
-  onSwitchRole,
-  onOpenNewRecipe,
-  onOpenSearch,
-  onOpenAuth,
-}) => {
-  const currentRole: UserRole = currentUser ? (currentUser.roles.includes('Admin') ? 'Admin' : 'Author') : 'Guest';
-
-  return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200 shadow-xs">
-      {/* Top Banner indicating system spec */}
-      <div className="bg-stone-900 text-stone-300 text-xs py-1.5 px-4">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">
-              .NET 10 Minimal APIs
-            </span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-950 text-sky-300 border border-sky-800">
-              Next.js App Router
-            </span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-950 text-amber-300 border border-amber-800">
-              PostgreSQL 16 FTS
-            </span>
-            <span className="hidden sm:inline text-stone-400">| SRS IEEE 830 / ISO 29148 Standard</span>
-          </div>
-
-          {/* Quick Role Switcher for instant permission testing */}
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-stone-400 mr-1">Role:</span>
-            <button
-              onClick={() => onSwitchRole('Guest')}
-              className={`px-2 py-0.5 rounded transition-all text-xs font-medium cursor-pointer ${
-                currentRole === 'Guest'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-stone-800 text-stone-300 hover:bg-stone-700'
-              }`}
-              title="Guest (Read published recipes only)"
-            >
-              <span className="flex items-center gap-1">
-                <UserX className="w-3 h-3" /> Guest
-              </span>
-            </button>
-            <button
-              onClick={() => onSwitchRole('Author')}
-              className={`px-2 py-0.5 rounded transition-all text-xs font-medium cursor-pointer ${
-                currentRole === 'Author'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-stone-800 text-stone-300 hover:bg-stone-700'
-              }`}
-              title="Author (Create/Edit/Delete own recipes)"
-            >
-              <span className="flex items-center gap-1">
-                <UserCheck className="w-3 h-3" /> Author
-              </span>
-            </button>
-            <button
-              onClick={() => onSwitchRole('Admin')}
-              className={`px-2 py-0.5 rounded transition-all text-xs font-medium cursor-pointer ${
-                currentRole === 'Admin'
-                  ? 'bg-rose-600 text-white shadow-xs'
-                  : 'bg-stone-800 text-stone-300 hover:bg-stone-700'
-              }`}
-              title="Admin (Full CRUD & Category management)"
-            >
-              <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" /> Admin
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Navigation Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
-          {/* Logo & Brand */}
-          <div
-            className="flex items-center gap-3 cursor-pointer group select-none"
-            onClick={() => setActiveTab('explore')}
-          >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center text-white shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
-              <ChefHat className="w-6 h-6" />
-            </div>
-            <div>
-                <p className="text-xl font-bold font-serif tracking-tight text-stone-900 group-hover:text-amber-700 transition-colors">
-                  Culinary Blog
-                </p>
-              <p className="text-xs text-stone-500 hidden sm:block">
-                Recipe & Culinary Products Management Platform
-              </p>
-            </div>
-          </div>
-
-          {/* Navigation Links */}
-          <nav className="flex items-center gap-1 sm:gap-2">
-            <button
-              onClick={() => setActiveTab('explore')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
-                activeTab === 'explore'
-                  ? 'bg-amber-50 text-amber-900 font-semibold'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-              }`}
-            >
-              Explore
-            </button>
-
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
-                activeTab === 'dashboard'
-                  ? 'bg-amber-50 text-amber-900 font-semibold'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
-              }`}
-            >
-              Management
-            </button>
-          </nav>
-
-          {/* Action Button: Create Recipe */}
-          {/* Action Buttons: FR-AUTH & Create Recipe */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onOpenSearch}
-              className="p-2 text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-lg md:hidden cursor-pointer"
-              title="Search"
-            >
-              <Search className="w-5 h-5" />
-            </button>
-
-            {/* FR-AUTH Module Trigger */}
-            <button
-              onClick={() => onOpenAuth()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-300 hover:bg-stone-100 text-stone-700 text-xs font-semibold transition-colors cursor-pointer"
-              title="FR-AUTH: User Management & Token Rotation"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-              <span>{currentUser ? currentUser.displayName.split(' ')[0] : 'Sign In'}</span>
-              <span className="hidden lg:inline text-[10px] font-mono px-1 rounded bg-stone-200 text-stone-600">
-                FR-AUTH
-              </span>
-            </button>
-
-            {currentRole !== 'Guest' ? (
-              <button
-                onClick={onOpenNewRecipe}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium shadow-xs transition-colors cursor-pointer"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">Create Recipe</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => onOpenAuth('login')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition-colors cursor-pointer"
-              >
-                Sign In
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-};

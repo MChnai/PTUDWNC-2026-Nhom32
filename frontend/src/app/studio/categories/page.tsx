@@ -1,0 +1,21 @@
+'use client';
+import Link from 'next/link';
+import { useEffect, useState, type FormEvent } from 'react';
+import { ArrowLeft, Plus, Pencil, Trash2, Save, X, LoaderCircle } from 'lucide-react';
+import { api, json } from '@/lib/api';
+import type { Category } from '@/lib/types';
+import { useAuth, useToast } from '@/components/Providers';
+import AccountGate from '@/components/AccountGate';
+export default function CategoryAdmin() {
+  const { user, loading } = useAuth(); const toast = useToast(); const [categories, setCategories] = useState<Category[]>([]); const [editing, setEditing] = useState<Category | null>(null); const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const [fetching, setFetching] = useState(true);
+  const [name, setName] = useState(''); const [description, setDescription] = useState('');
+  async function load() { setFetching(true); try { setCategories(await api<Category[]>('/categories')); setError(''); } catch(e) { setError((e as Error).message); } finally { setFetching(false); } }
+  useEffect(() => { if (user?.roles.includes('Admin')) void load(); }, [user]);
+  if (loading) return <div className="container page-section loading-state">Đang tải...</div>;
+  if (!user) return <div className="container page-section"><AccountGate next="/studio/categories"/></div>;
+  if (!user.roles.includes('Admin')) return <div className="container page-section"><div className="form-error" role="alert">Bạn cần quyền quản trị viên để quản lý danh mục.</div><Link href="/studio" className="btn btn-outline">Góc tác giả</Link></div>;
+  function edit(c: Category | null) { setEditing(c); setName(c?.name || ''); setDescription(c?.description || ''); setError(''); }
+  async function submit(e: FormEvent) { e.preventDefault(); setBusy(true); setError(''); try { await api(`/categories${editing ? `/${editing.id}` : ''}`, { method: editing ? 'PUT' : 'POST', body: json({ name, description }) }); edit(null); await load(); toast('Đã lưu danh mục.'); } catch(e) { setError((e as Error).message); } finally { setBusy(false); } }
+  async function remove(c: Category) { if (!window.confirm(`Xóa danh mục “${c.name}”? Danh mục chỉ xóa được khi không còn công thức nào.`)) return; setBusy(true); setError(''); try { await api(`/categories/${c.id}`, { method: 'DELETE' }); if (editing?.id === c.id) edit(null); await load(); toast('Đã xóa danh mục.'); } catch(e) { setError((e as Error).message); } finally { setBusy(false); } }
+  return <section className="container page-section"><Link href="/studio" className="text-link back-link"><ArrowLeft size={16}/>Góc tác giả</Link><div className="page-intro"><span className="eyebrow">QUẢN TRỊ DANH MỤC</span><h1>Sắp xếp <em>những hương vị.</em></h1><p>Tạo một nơi dễ tìm cho mỗi công thức.</p></div>{error && <div role="alert" className="form-error" style={{ marginBottom: 22 }}>{error}</div>}<div className="admin-category-grid"><div className="category-admin-list">{fetching ? <div className="loading-state"><LoaderCircle className="spin"/>Đang tải danh mục...</div> : categories.map(c => <div className="category-admin-row" key={c.id}><div><h3>{c.name}</h3><p>{c.description}</p><small>{c.recipeCount} công thức công khai · /{c.slug}</small></div><button className="icon-btn" aria-label={`Sửa ${c.name}`} disabled={busy} onClick={() => edit(c)}><Pencil size={17}/></button><button className="icon-btn danger" aria-label={`Xóa ${c.name}`} disabled={busy} onClick={() => remove(c)}><Trash2 size={17}/></button></div>)}</div><form onSubmit={submit} className="category-admin-form form-stack"><h2>{editing ? 'Chỉnh sửa danh mục' : 'Thêm một danh mục'}</h2><label>Tên danh mục<input required minLength={2} maxLength={100} value={name} onChange={e => setName(e.target.value)}/></label><label>Mô tả<textarea maxLength={2000} rows={4} value={description} onChange={e => setDescription(e.target.value)}/></label>{editing && <small>Đường dẫn được giữ nguyên để các liên kết hiện tại tiếp tục hoạt động.</small>}<div className="button-row"><button className="btn btn-dark" disabled={busy}>{busy ? <LoaderCircle size={17} className="spin"/> : editing ? <Save size={17}/> : <Plus size={17}/>} {editing ? 'Lưu thay đổi' : 'Tạo danh mục'}</button>{editing && <button className="btn btn-outline" type="button" onClick={() => edit(null)}><X size={16}/>Hủy</button>}</div></form></div></section>;
+}

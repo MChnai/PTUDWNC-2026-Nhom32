@@ -1,242 +1,139 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 using CulinaryBlog.API.Endpoints;
+using CulinaryBlog.API.Middleware;
 using CulinaryBlog.API.Middlewares;
 using CulinaryBlog.Application;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Infrastructure;
 using CulinaryBlog.Infrastructure.Services;
+using CulinaryBlog.Infrastructure.Persistence.Seeders;
 using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Logging;
+using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using Serilog;
-using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.FileProviders;
-using Asp.Versioning;
 
-// 0. Khởi tạo Bootstrap Logger cho giai đoạn App Startup (FR-OBS-002)
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .CreateBootstrapLogger();
-
-try
+var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog((ctx, config) => config.ReadFrom.Configuration(ctx.Configuration).Enrich.FromLogContext().WriteTo.Console());
+builder.Services.AddProblemDetails();
+builder.Services.AddOpenApi();
+builder.Services.AddMemoryCache();
+builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
+    .WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? ["http://localhost:3000"])
+    .AllowAnyMethod().AllowAnyHeader().WithExposedHeaders("ETag", "X-Correlation-ID")));
+builder.Services.AddRateLimiter(options =>
 {
-    var builder = WebApplication.CreateBuilder(args);
-
-    builder.Services.AddCors(options =>
+    options.RejectionStatusCode = 429;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        context.Request.Path.StartsWithSegments("/api")
+        ? RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ =>
+            new FixedWindowRateLimiterOptions { Window = TimeSpan.FromMinutes(1), PermitLimit = 100, QueueLimit = 0 })
+        : RateLimitPartition.GetNoLimiter("non-api"));
+    options.AddPolicy("auth", context => RateLimitPartition.GetSlidingWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new SlidingWindowRateLimiterOptions
+        { Window = TimeSpan.FromMinutes(1), SegmentsPerWindow = 6,
+          PermitLimit = builder.Configuration.GetValue("RateLimits:AuthPermitLimit", 10), QueueLimit = 0 }));
+    options.AddPolicy("upload", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown", _ => new FixedWindowRateLimiterOptions
+        { Window = TimeSpan.FromMinutes(1), PermitLimit = 5, QueueLimit = 0 }));
+    options.OnRejected = async (context, ct) =>
     {
-        options.AddPolicy("AllowFrontend", policy =>
-        {
-            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
-                    ?? new[] {
-                        "http://localhost:3000",
-                        "http://localhost:5173",
-                        "http://localhost:5174",
-                        "http://127.0.0.1:5174"
-                    })
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
-        });
-    });
-
-    builder.Services.AddRateLimiter(options =>
-    {
-        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-
-        // Fixed Window Policy: Tối đa 100 request / 1 phút cho mỗi IP
-        options.AddFixedWindowLimiter("fixed-window", opt =>
-        {
-            opt.Window = TimeSpan.FromMinutes(1);
-            opt.PermitLimit = 100;
-            opt.QueueLimit = 10;
-            opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-        });
-
-        // Token Bucket Policy riêng cho các API nhạy cảm (Auth Login/Register)
-        options.AddTokenBucketLimiter("auth-limiter", opt =>
-        {
-            opt.TokenLimit = 10;
-            opt.QueueLimit = 2;
-            opt.ReplenishmentPeriod = TimeSpan.FromSeconds(10);
-            opt.TokensPerPeriod = 2;
-            opt.AutoReplenishment = true;
-        });
-    });
-
-    // Bật Serilog cho ứng dụng
-    builder.Host.UseSerilog((context, services, configuration) => configuration
-        .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services)
-        .Enrich.FromLogContext());
-
-    // Bật ShowPII trong môi trường Development
-    if (builder.Environment.IsDevelopment())
-    {
-        IdentityModelEventSource.ShowPII = true;
-    }
-
-    // 1. Caching & OpenAPI
-    builder.Services.AddMemoryCache();
-    builder.Services.AddOpenApi();
-
-    // 2. Cấu hình Hangfire Service & Server (BẮT BUỘC để Inject được IBackgroundJobClient)
-    builder.Services.AddHangfire(config =>
-    {
-        config.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-              .UseSimpleAssemblyNameTypeSerializer()
-              .UseRecommendedSerializerSettings()
-              .UseInMemoryStorage(); // Lưu trữ Job tạm thời trong bộ nhớ RAM
-    });
-    builder.Services.AddHangfireServer(); // Worker Process xử lý Job ngầm
-
-    // 3. Application & Infrastructure Services
-    builder.Services.AddApplication();
-    builder.Services.AddInfrastructure(builder.Configuration);
-
-    // 4. Cấu hình Authentication & Authorization
-    var jwtSettings = builder.Configuration.GetSection("Jwt");
-    var keyString = jwtSettings["Key"] ?? jwtSettings["SecretKey"]
-        ?? throw new InvalidOperationException("JWT Key chưa được cấu hình!");
-
-    // Gán KeyId cho SecurityKey trùng khớp với "kid" trong JwtService
-    var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString))
-    {
-        KeyId = "CulinaryBlogSecretKeyId"
+        var seconds = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retry) ? Math.Ceiling(retry.TotalSeconds) : 60;
+        context.HttpContext.Response.Headers.RetryAfter = seconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        await Results.Problem(statusCode: 429, detail: $"Bạn thao tác hơi nhanh. Vui lòng thử lại sau {seconds} giây.").ExecuteAsync(context.HttpContext);
     };
-
-    builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(options =>
-    {
-        options.TokenHandlers.Clear();
-        options.TokenHandlers.Add(new JwtSecurityTokenHandler());
-
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = securityKey,
-            RoleClaimType = ClaimTypes.Role
-        };
-    });
-
-    builder.Services.AddApiVersioning(options =>
-    {
-        options.DefaultApiVersion = new ApiVersion(1, 0);
-        options.AssumeDefaultVersionWhenUnspecified = true;
-        options.ReportApiVersions = true;
-        options.ApiVersionReader = ApiVersionReader.Combine(
-            new UrlSegmentApiVersionReader(),
-            new HeaderApiVersionReader("X-Api-Version")
-        );
-    }).AddApiExplorer(options =>
-    {
-        options.GroupNameFormat = "'v'VVV";
-        options.SubstituteApiVersionInUrl = true;
-    });
-
-    builder.Services.AddAuthorization();
-    builder.Services.AddScoped<IBackgroundJobService, HangfireJobService>();
-
-    var app = builder.Build();
-    Console.WriteLine(
-    $"ContentRoot: {app.Environment.ContentRootPath}");
-    var webRoot = Path.Combine(
-        app.Environment.ContentRootPath,
-        "wwwroot"
-    );
-
-    Directory.CreateDirectory(webRoot);
-
-    app.Environment.WebRootPath = webRoot;
-
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new PhysicalFileProvider(webRoot)
-    });
-
-    // 5. Middlewares Logging & Tracing Context (FR-OBS-002)
-    app.UseMiddleware<CorrelationIdMiddleware>();
-    app.UseSerilogRequestLogging();
-
-    // 6. Scalar UI, Swagger & Hangfire Dashboard (Dev Mode)
-    if (app.Environment.IsDevelopment())
-    {
-        app.MapOpenApi();
-        app.MapScalarApiReference(options =>
-        {
-            options.Title = "Culinary Blog API Documentation";
-            options.Theme = ScalarTheme.Purple;
-            options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
-        });
-
-        // Dashboard riêng của Hangfire để theo dõi các Job xóa file ngầm
-        app.UseHangfireDashboard("/hangfire");
-    }
-
-    // 7. Khởi tạo Recurring Cron Jobs (FR-JOB-003)
-    using (var scope = app.Services.CreateScope())
-    {
-        var sitemapJobService = scope.ServiceProvider.GetRequiredService<ISitemapJobService>();
-        sitemapJobService.ScheduleRecurringSitemapJob();
-    }
-
-    // Định tuyến Versioned Minimal API Set
-    var apiVersionSet = app.NewApiVersionSet()
-        .HasApiVersion(new ApiVersion(1, 0))
-        .HasApiVersion(new ApiVersion(2, 0))
-        .ReportApiVersions()
-        .Build();
-
-    // Ví dụ gán version vào Group Endpoints
-    var versionedGroup = app.MapGroup("/api/v{version:apiVersion}")
-                            .WithApiVersionSet(apiVersionSet);
-
-
-    app.UseCors("AllowFrontend");
-    app.UseRateLimiter();
-    app.UseAuthentication();
-    app.UseAuthorization();
-
-    // 8. Auth Middlewares
-    app.UseAuthentication();
-    app.UseAuthorization();
-
-    // 9. Map Endpoints
-    // app.MapAuthEndpoints();        
-    // app.MapHealthCheckEndpoints(); 
-    // app.MapCategoryEndpoints();
-    // app.MapRecipeEndpoints();
-    // app.MapFileEndpoints();
-    // app.MapJobEndpoints();
-
-    versionedGroup.MapAuthEndpoints();
-    versionedGroup.MapCategoryEndpoints();
-    versionedGroup.MapRecipeEndpoints();
-    versionedGroup.MapFileEndpoints();
-    versionedGroup.MapJobEndpoints();
-
-    app.MapHealthCheckEndpoints();
-
-    app.Run();
-}
-catch (Exception ex)
+});
+var jwt = builder.Configuration.GetSection("Jwt");
+var secret = jwt["Key"] ?? throw new InvalidOperationException("Cần cấu hình Jwt__Key.");
+if (Encoding.UTF8.GetByteCount(secret) < 32) throw new InvalidOperationException("Jwt__Key phải dài ít nhất 32 byte.");
+if (!builder.Environment.IsDevelopment() && secret.StartsWith("DEVELOPMENT_"))
+    throw new InvalidOperationException("Cần thay Jwt__Key trước khi chạy Production.");
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
-    Log.Fatal(ex, "Ứng dụng bị dừng đột ngột do lỗi khởi động!");
-}
-finally
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true, ValidateAudience = true, ValidateLifetime = true, ValidateIssuerSigningKey = true,
+        ValidIssuer = jwt["Issuer"], ValidAudience = jwt["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)) { KeyId = "CulinaryBlogSecretKeyId" },
+        ClockSkew = TimeSpan.FromSeconds(15), RoleClaimType = ClaimTypes.Role
+    };
+});
+builder.Services.AddAuthorization(options =>
 {
-    Log.CloseAndFlush();
+    options.AddPolicy("Author", policy => policy.RequireAuthenticatedUser().RequireRole("Author", "Admin"));
+    options.AddPolicy("VerifiedAuthor", policy => policy.RequireAuthenticatedUser().RequireRole("Author", "Admin").RequireClaim("email_verified", "true"));
+});
+builder.Services.AddOutputCache(options =>
+{
+    options.AddPolicy("public-recipes", p => p.Expire(TimeSpan.FromSeconds(60)).SetVaryByQuery("*").Tag("recipes"));
+    options.AddPolicy("public-categories", p => p.Expire(TimeSpan.FromHours(1)).Tag("recipes"));
+});
+if (!string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Redis")))
+    builder.Services.AddStackExchangeRedisOutputCache(options =>
+    { options.Configuration = builder.Configuration.GetConnectionString("Redis"); options.InstanceName = "culinary:"; });
+builder.Services.AddHangfire(config =>
+{
+    config.UseSimpleAssemblyNameTypeSerializer().UseRecommendedSerializerSettings();
+    if (builder.Configuration.GetValue<bool>("Jobs:InMemory")) config.UseInMemoryStorage();
+    else config.UsePostgreSqlStorage(c => c.UseNpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+});
+builder.Services.AddHangfireServer();
+builder.Services.AddScoped<IBackgroundJobService, HangfireJobService>();
+builder.Services.AddScoped<IFileCleanupService, FileCleanupService>();
+builder.Services.AddScoped<IRecipeThumbnailJob, RecipeThumbnailJob>();
+builder.Services.AddScoped<StarterCatalogSeeder>();
+
+var app = builder.Build();
+if (builder.Configuration.GetValue<bool>("Seed:Enabled"))
+{
+    if (!app.Environment.IsDevelopment()) throw new InvalidOperationException("Starter seed chỉ dành cho Development.");
+    using var scope = app.Services.CreateScope();
+    await scope.ServiceProvider.GetRequiredService<StarterCatalogSeeder>().SeedAsync(Path.Combine(app.Environment.ContentRootPath, "Data", "starter-catalog.json"));
 }
+Directory.CreateDirectory(Path.Combine(app.Environment.ContentRootPath, "wwwroot"));
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseCors();
+app.UseAuthentication();
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseSerilogRequestLogging();
+app.Use(async (http, next) =>
+{
+    http.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    http.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    if (http.Request.Path.StartsWithSegments("/api/v1/auth")) http.Response.Headers.CacheControl = "no-store";
+    await next();
+    if (http.Request.Path.StartsWithSegments("/api/v1") && http.Response.StatusCode < 400
+        && http.Request.Method is "POST" or "PUT" or "PATCH" or "DELETE")
+        await http.RequestServices.GetRequiredService<IOutputCacheStore>().EvictByTagAsync("recipes", http.RequestAborted);
+});
+app.UseStaticFiles();
+app.UseAuthorization();
+app.UseRateLimiter();
+app.UseOutputCache();
+var api = app.MapGroup("/api/v1");
+api.MapAuthEndpoints();
+api.MapCategoryEndpoints();
+api.MapRecipeEndpoints();
+api.MapFileEndpoints();
+api.MapJobEndpoints();
+app.MapHealthCheckEndpoints();
+app.MapHangfireDashboard("/hangfire", new DashboardOptions { Authorization = [new AdminDashboardAuthorization()] }).RequireAuthorization(policy => policy.RequireRole("Admin"));
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
+if (!builder.Configuration.GetValue<bool>("Jobs:DisableRecurring"))
+{
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<ISitemapJobService>().ScheduleRecurringSitemapJob();
+}
+app.Run();
+
+public partial class Program;

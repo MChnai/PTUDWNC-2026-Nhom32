@@ -1,0 +1,110 @@
+name: culinary-blog
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: culinaryblog
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports: ["127.0.0.1:5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/scripts/init_postgresql16_schema_compatible.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./backend/scripts/04_upgrade_v2.sql:/docker-entrypoint-initdb.d/02_upgrade.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d culinaryblog"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: ["redisdata:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  minio:
+    image: culinary-minio:local
+    build:
+      context: ./deploy
+      dockerfile: Dockerfile.minio
+    restart: unless-stopped
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-culinaryminio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-CulinaryMinio_Local_2026!}
+    ports: ["127.0.0.1:9000:9000", "127.0.0.1:9001:9001"]
+    volumes: ["miniodata:/data"]
+  minio-init:
+    image: culinary-minio:local
+    pull_policy: never
+    depends_on: [minio]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-culinaryminio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-CulinaryMinio_Local_2026!}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        until mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"; do sleep 2; done
+        mc mb --ignore-existing local/culinary-blog
+        mc anonymous set download local/culinary-blog
+  mailpit:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    ports: ["127.0.0.1:8025:8025"]
+  api:
+    build:
+      context: ./backend
+      dockerfile: src/CulinaryBlog.API/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=culinaryblog;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}
+      ConnectionStrings__Redis: redis:6379
+      Jwt__Key: ${JWT_SECRET:-DEVELOPMENT_ONLY_CHANGE_THIS_KEY_AT_LEAST_32_BYTES}
+      Storage__Provider: Minio
+      Minio__Endpoint: minio:9000
+      Minio__AccessKey: ${MINIO_ROOT_USER:-culinaryminio}
+      Minio__SecretKey: ${MINIO_ROOT_PASSWORD:-CulinaryMinio_Local_2026!}
+      Minio__CustomDomain: ${MINIO_PUBLIC_URL:-http://localhost:9000}
+      Minio__DefaultBucket: culinary-blog
+      Smtp__Host: mailpit
+      Smtp__Port: 1025
+      ClientUrl: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Seed__Enabled: ${SEED_ENABLED:-true}
+      Seed__AdminEmail: ${SEED_ADMIN_EMAIL:-admin@culinary.local}
+      Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:-Culinary_Local_2026!}
+      Jobs__InMemory: "false"
+      OpenTelemetry__OtlpEndpoint: ${OTLP_ENDPOINT:-}
+    ports: ["127.0.0.1:5000:5000"]
+    volumes: ["uploads:/app/wwwroot/uploads"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      minio-init: { condition: service_completed_successfully }
+      mailpit: { condition: service_started }
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://api:5000
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+    ports: ["3000:3000"]
+    depends_on: [api]
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+  uploads:

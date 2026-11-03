@@ -8,7 +8,7 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
     {
         RuleFor(v => v.FullName)
             .NotEmpty().WithMessage("Full Name is required.")
-            .MaximumLength(100).WithMessage("Full Name must not exceed 100 characters.");
+            .MinimumLength(2).MaximumLength(100).WithMessage("Full Name must not exceed 100 characters.");
 
         RuleFor(v => v.Email)
             .NotEmpty().WithMessage("Email is required.")
@@ -23,6 +23,8 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 
         RuleFor(v => v.Password)
             .NotEmpty().WithMessage("Password is required.")
+            .MaximumLength(128)
+            .Matches(@"[a-z]").WithMessage("Mật khẩu phải có ít nhất một chữ thường.")
             .MinimumLength(8).WithMessage("Password must be at least 8 characters long.")
             .Matches(@"[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
             .Matches(@"[0-9]").WithMessage("Password must contain at least one number.")

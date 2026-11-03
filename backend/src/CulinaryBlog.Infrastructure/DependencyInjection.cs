@@ -1,120 +1,59 @@
 using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Common.Metrics;
 using CulinaryBlog.Infrastructure.Persistence;
 using CulinaryBlog.Infrastructure.Persistence.Seeders;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using CulinaryBlog.Infrastructure.Services;
-using Minio;
 using CulinaryBlog.Infrastructure.Storage;
 using CulinaryBlog.Infrastructure.Jobs;
 using CulinaryBlog.Infrastructure.HealthChecks;
-using CulinaryBlog.Application.Common.Metrics;
-using OpenTelemetry.Exporter;
-using OpenTelemetry.Metrics;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Minio;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-
+using OpenTelemetry.Metrics;
 namespace CulinaryBlog.Infrastructure;
-
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection") 
-                               ?? "Host=localhost;Port=5432;Database=culinaryblog;Username=postgres;Password=postgres";
-
-        var minioOptions = configuration.GetSection(MinioOptions.SectionName).Get<MinioOptions>()!;
-            services.Configure<MinioOptions>(configuration.GetSection(MinioOptions.SectionName));
-
-        var serviceName = configuration["OpenTelemetry:ServiceName"] ?? "CulinaryBlog.API";
-        var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"] ?? "http://localhost:4317";
-
-        services.AddDbContext<ApplicationDbContext>(options =>
-        {
-            options.UseNpgsql(connectionString, npgsqlOptions =>
-            {
-                npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorCodesToAdd: null);
-            });
-        });
-
-        services.AddScoped<IFileStorageService, FileStorageService>();
-        services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+        var connection = config.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Cần ConnectionStrings__DefaultConnection.");
+        services.AddDbContext<ApplicationDbContext>(o => o.UseNpgsql(connection, n => n.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+        services.AddScoped<IApplicationDbContext>(p => p.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IDatabaseSeeder, DatabaseSeeder>();
-
-        services.AddSingleton<IJwtService, Services.JwtService>();
-        services.AddSingleton<IPasswordHasher, Services.PasswordHasher>();
+        services.Configure<MinioOptions>(config.GetSection("Minio"));
+        var minio = config.GetSection("Minio").Get<MinioOptions>() ?? new();
+        services.AddMinio(c => c.WithEndpoint(minio.Endpoint).WithCredentials(minio.AccessKey, minio.SecretKey).WithSSL(minio.UseSSL).Build());
+        if (config["Storage:Provider"]?.Equals("Minio", StringComparison.OrdinalIgnoreCase) == true) services.AddScoped<IFileStorageService, MinioFileStorageService>();
+        else services.AddScoped<IFileStorageService, FileStorageService>();
+        services.AddScoped<IStorageService, MinioStorageService>();
+        services.AddSingleton<IJwtService, JwtService>();
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<IImageInspector, ImageInspector>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IWelcomeEmailJobService, WelcomeEmailJobService>();
-
-        // Register Minio Client SDK
-        services.AddMinio(config =>
-        {
-            config.WithEndpoint(minioOptions.Endpoint)
-                  .WithCredentials(minioOptions.AccessKey, minioOptions.SecretKey)
-                  .WithSSL(minioOptions.UseSSL)
-                  .Build();
-        });
-
-        services.AddScoped<IStorageService, MinioStorageService>();
         services.AddScoped<IThumbnailJobService, ThumbnailJobService>();
         services.AddScoped<SitemapJob>();
         services.AddScoped<ISitemapJobService, SitemapJobService>();
-
-        // FR-OBS-001: Đăng ký Health Checks
-        services.AddHealthChecks()
-            // Liveness check
-            .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "live" })
-            // Readiness checks (DB, Redis, MinIO)
-            .AddDbContextCheck<ApplicationDbContext>(
-                name: "postgresql",
-                failureStatus: HealthStatus.Unhealthy,
-                tags: new[] { "ready" })
-            .AddRedis(
-                redisConnectionString: configuration.GetConnectionString("Redis") ?? "localhost:6379",
-                name: "redis",
-                failureStatus: HealthStatus.Unhealthy,
-                tags: new[] { "ready" })
-            .AddCheck<MinioHealthCheck>(
-                name: "minio",
-                failureStatus: HealthStatus.Unhealthy,
-                tags: new[] { "ready" });
-
-        // FR-OBS-003: Cấu hình OpenTelemetry Distributed Tracing & Metrics
-        services.AddOpenTelemetry()
-            .ConfigureResource(resource => resource.AddService(serviceName))
-            .WithTracing(tracing =>
-            {
-                tracing
-                    .AddSource(serviceName)
-                    .AddAspNetCoreInstrumentation(options =>
-                    {
-                        options.RecordException = true;
-                    })
-                    .AddHttpClientInstrumentation()
-                    .AddEntityFrameworkCoreInstrumentation() // Tự động ghi nhận SQL queries không cần cấu hình options
-                    .AddOtlpExporter(options =>
-                    {
-                        options.Endpoint = new Uri(otlpEndpoint);
-                        options.Protocol = OtlpExportProtocol.Grpc;
-                    });
-            })
-            .WithMetrics(metrics =>
-            {
-                metrics
-                    .AddAspNetCoreInstrumentation()
-                    .AddHttpClientInstrumentation()
-                    .AddMeter(CulinaryBlogMetrics.MeterName) // Đăng ký Custom Business Metrics
-                    .AddOtlpExporter(options =>
-                    {
-                        options.Endpoint = new Uri(otlpEndpoint);
-                        options.Protocol = OtlpExportProtocol.Grpc;
-                    });
-            });
-
+        var checks = services.AddHealthChecks()
+            .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live"])
+            .AddDbContextCheck<ApplicationDbContext>("postgresql", tags: ["ready"]);
+        var redis = config.GetConnectionString("Redis");
+        if (!string.IsNullOrWhiteSpace(redis)) checks.AddRedis(redis, "redis", tags: ["ready"]);
+        if (config["Storage:Provider"]?.Equals("Minio", StringComparison.OrdinalIgnoreCase) == true) checks.AddCheck<MinioHealthCheck>("minio", tags: ["ready"]);
+        var telemetry = services.AddOpenTelemetry().ConfigureResource(r => r.AddService("CulinaryBlog.API"));
+        telemetry.WithTracing(t =>
+        {
+            t.AddAspNetCoreInstrumentation().AddHttpClientInstrumentation().AddEntityFrameworkCoreInstrumentation();
+            if (Uri.TryCreate(config["OpenTelemetry:OtlpEndpoint"], UriKind.Absolute, out var endpoint)) t.AddOtlpExporter(o => o.Endpoint = endpoint);
+        });
+        telemetry.WithMetrics(m =>
+        {
+            m.AddAspNetCoreInstrumentation().AddHttpClientInstrumentation().AddMeter(CulinaryBlogMetrics.MeterName);
+            if (Uri.TryCreate(config["OpenTelemetry:OtlpEndpoint"], UriKind.Absolute, out var endpoint)) m.AddOtlpExporter(o => o.Endpoint = endpoint);
+        });
         return services;
     }
 }

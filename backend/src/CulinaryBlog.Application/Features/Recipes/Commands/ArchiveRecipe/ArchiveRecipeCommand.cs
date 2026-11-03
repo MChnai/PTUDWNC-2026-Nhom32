@@ -48,7 +48,7 @@ public class ArchiveRecipeCommandHandler : IRequestHandler<ArchiveRecipeCommand,
         {
             if (recipe.Status == RecipeStatus.Archived)
             {
-                return Result<Unit>.Failure("NO_CHANGE", "Công thức đã ở trong danh sách lưu trữ (Archived) rồi.");
+                return Result<Unit>.Success(Unit.Value);
             }
 
             recipe.Status = RecipeStatus.Archived;
@@ -57,7 +57,7 @@ public class ArchiveRecipeCommandHandler : IRequestHandler<ArchiveRecipeCommand,
         {
             if (recipe.Status != RecipeStatus.Archived)
             {
-                return Result<Unit>.Failure("NO_CHANGE", "Công thức hiện không nằm trong danh sách lưu trữ.");
+                return Result<Unit>.Success(Unit.Value);
             }
 
             // Khôi phục về trạng thái Draft khi bỏ Lưu trữ

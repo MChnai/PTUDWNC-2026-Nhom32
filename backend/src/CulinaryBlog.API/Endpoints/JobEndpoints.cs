@@ -12,7 +12,7 @@ public static class JobEndpoints
     {
         var group = app.MapGroup("/jobs")
                        .WithTags("Background Jobs Management")
-                       .RequireAuthorization(); // Hoặc .AllowAnonymous() trong quá trình dev test
+                       .RequireAuthorization(policy => policy.RequireRole("Admin"));
 
         // 1. FR-JOB-001 Test: Kích hoạt Fire-and-Forget Welcome Email
         group.MapPost("/welcome-email/trigger", (

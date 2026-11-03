@@ -25,6 +25,13 @@ public class DeleteRecipeStepCommandHandler : IRequestHandler<DeleteRecipeStepCo
 
     public async Task<Result<Unit>> Handle(DeleteRecipeStepCommand request, CancellationToken cancellationToken)
     {
+        var recipe = await _context.Recipes.Include(r => r.Steps).FirstOrDefaultAsync(r => r.Id == request.RecipeId, cancellationToken);
+        if (recipe == null) return Result<Unit>.Failure("NOT_FOUND", "Không tìm thấy công thức.");
+        if (!RecipePermission.CanEdit(request.CurrentUser, recipe.AuthorId))
+            return Result<Unit>.Failure("FORBIDDEN", "Bạn không có quyền xóa bước thực hiện.");
+        if (recipe.Status == CulinaryBlog.Domain.Enums.RecipeStatus.Published && recipe.Steps.Count <= 1)
+            return Result<Unit>.Failure("INVALID_STATE", "Hãy hủy xuất bản trước khi xóa bước cuối cùng.");
+
         var stepToDelete = await _context.RecipeSteps
             .FirstOrDefaultAsync(s => s.Id == request.StepId && s.RecipeId == request.RecipeId, cancellationToken);
 

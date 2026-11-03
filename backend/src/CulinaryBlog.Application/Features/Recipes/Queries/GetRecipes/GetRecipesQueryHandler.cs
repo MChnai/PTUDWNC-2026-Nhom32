@@ -1,103 +1,69 @@
-    using CulinaryBlog.Application.Common.Interfaces;
-    using CulinaryBlog.Application.Common.Models;
-    using CulinaryBlog.Application.Features.Recipes.DTOs;
-    using CulinaryBlog.Domain.Enums;
-    using MediatR;
-    using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
+using CulinaryBlog.Application.Common.Interfaces;
+using CulinaryBlog.Application.Common.Models;
+using CulinaryBlog.Application.Features.Recipes.DTOs;
+using CulinaryBlog.Domain.Entities;
+using CulinaryBlog.Domain.Enums;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
 
-    namespace CulinaryBlog.Application.Features.Recipes.Queries.GetRecipes;
+namespace CulinaryBlog.Application.Features.Recipes.Queries.GetRecipes;
 
-    public class GetRecipesQueryHandler : IRequestHandler<GetRecipesQuery, Result<PaginatedList<RecipeDto>>>
+public class GetRecipesQueryHandler(IApplicationDbContext context) : IRequestHandler<GetRecipesQuery, Result<PaginatedList<RecipeDto>>>
+{
+    public async Task<Result<PaginatedList<RecipeDto>>> Handle(GetRecipesQuery request, CancellationToken ct)
     {
-        private readonly IApplicationDbContext _context;
-
-        public GetRecipesQueryHandler(IApplicationDbContext context)
+        var page = Math.Clamp(request.PageNumber, 1, 1000000);
+        var size = Math.Clamp(request.PageSize, 1, 50);
+        var term = (request.SearchTerm ?? request.Keyword)?.Trim();
+        IQueryable<Recipe> query = context.Recipes.AsNoTracking().Where(r => r.Status == RecipeStatus.Published);
+        Dictionary<Guid, float>? ranks = null;
+        if (!string.IsNullOrWhiteSpace(term))
         {
-            _context = context;
+            if (term.Length < 2 || term.Length > 200)
+                return Result<PaginatedList<RecipeDto>>.Failure("INVALID_QUERY", "Từ khóa cần từ 2 đến 200 ký tự.");
+            // Tokenize before to_tsquery; SQL parameters never contain SQL syntax.
+            var tokens = Regex.Matches(term, @"[\p{L}\p{N}]+", RegexOptions.None, TimeSpan.FromSeconds(1))
+                .Select(m => m.Value + ":*").Take(20).ToArray();
+            if (tokens.Length == 0) return Result<PaginatedList<RecipeDto>>.Failure("INVALID_QUERY", "Từ khóa cần chứa chữ hoặc số.");
+            var tsquery = string.Join(" & ", tokens);
+            // Rank is computed in PostgreSQL, without the old function's 1000-row truncation.
+            var matches = await context.Database.SqlQuery<SearchHit>($"""
+                SELECT id AS "Id", ts_rank(search_vector, to_tsquery('public.vietnamese_unaccent', unaccent({tsquery}))) AS "Rank"
+                FROM public.recipes
+                WHERE status = 'Published' AND NOT is_deleted
+                   AND search_vector @@ to_tsquery('public.vietnamese_unaccent', unaccent({tsquery}))
+                """).ToListAsync(ct);
+            ranks = matches.ToDictionary(x => x.Id, x => x.Rank);
+            var ids = ranks.Keys.ToArray();
+            query = query.Where(r => ids.Contains(r.Id));
         }
-
-        public async Task<Result<PaginatedList<RecipeDto>>> Handle(GetRecipesQuery request, CancellationToken cancellationToken)
+        if (request.CategoryId.HasValue) query = query.Where(r => r.CategoryId == request.CategoryId);
+        if (request.Difficulty.HasValue) query = query.Where(r => r.Difficulty == (RecipeDifficulty)request.Difficulty);
+        if (request.MaxTotalTime.HasValue) query = query.Where(r => r.PrepTimeMinutes + r.CookTimeMinutes <= request.MaxTotalTime);
+        if (request.MaxCookTime.HasValue) query = query.Where(r => r.CookTimeMinutes <= request.MaxCookTime);
+        if (request.MinServings.HasValue) query = query.Where(r => r.Servings >= request.MinServings);
+        var asc = request.SortDirection?.Equals("asc", StringComparison.OrdinalIgnoreCase) == true;
+        if (ranks != null && request.SortBy is "rank" or "relevance")
         {
-            // 1. Chỉ lấy các bài viết đã Published và chưa bị xóa (!IsDeleted)
-            var query = _context.Recipes
-                .AsNoTracking()
-                .Where(r => !r.IsDeleted && r.Status == RecipeStatus.Published);
-
-            // 2. Bộ lọc (Filtering)
-            if (request.CategoryId.HasValue)
-            {
-                query = query.Where(r => r.CategoryId == request.CategoryId.Value);
-            }
-
-            if (request.Difficulty.HasValue)
-            {
-                var difficulty = (RecipeDifficulty)request.Difficulty.Value;
-
-                query = query.Where( r => r.Difficulty == difficulty);
-            }
-
-            if (request.MaxTotalTime.HasValue)
-            {
-                query = query.Where(r => (r.PrepTimeMinutes + r.CookTimeMinutes) <= request.MaxTotalTime.Value);
-            }
-
-            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
-            {
-                var term = request.SearchTerm.Trim().ToLower();
-                query = query.Where(r => r.Title.ToLower().Contains(term));
-            }
-
-            // 3. Sắp xếp (Sorting)
-            var isAscending = string.Equals(request.SortDirection, "asc", StringComparison.OrdinalIgnoreCase);
-
-            query = request.SortBy?.ToLower() switch
-            {
-                "views" => isAscending ? query.OrderBy(r => r.ViewCount) : query.OrderByDescending(r => r.ViewCount),
-                "rating" => isAscending ? query.OrderBy(r => r.RatingAverage) : query.OrderByDescending(r => r.RatingAverage),
-                "totaltime" => isAscending 
-                    ? query.OrderBy(r => r.PrepTimeMinutes + r.CookTimeMinutes) 
-                    : query.OrderByDescending(r => r.PrepTimeMinutes + r.CookTimeMinutes),
-                _ => isAscending ? query.OrderBy(r => r.CreatedAt) : query.OrderByDescending(r => r.CreatedAt)
-            };
-
-            // 4. Projection sang RecipeDto
-            var dtoQuery = query.Select(r => new RecipeDto
-            {
-                Id = r.Id,
-                Title = r.Title,
-                Slug = r.Slug,
-                Summary = r.Description,
-                // Lấy ảnh IsPrimary, nếu không có thì lấy ảnh đầu tiên trong danh sách Images
-                CoverImage = r.Images.Where(img => img.IsPrimary)
-                                .Select(img => img.OriginalUrl)
-                                .FirstOrDefault() 
-                            ?? r.Images.Select(img => img.OriginalUrl).FirstOrDefault(),
-                PrepTimeMinutes = r.PrepTimeMinutes,
-                CookTimeMinutes = r.CookTimeMinutes,
-                Difficulty = r.Difficulty,
-                ViewCount = r.ViewCount,
-                AverageRating = (double)r.RatingAverage,
-                CategoryId = r.CategoryId,
-                CategoryName = r.Category != null ? r.Category.Name : string.Empty,
-                PublishedAt = r.PublishedAt ?? r.CreatedAt,
-                Servings = r.Servings,
-                AuthorId = r.AuthorId,
-                AuthorName = r.Author != null
-                    ? r.Author.FullName
-                    : string.Empty,
-                RatingCount = r.RatingCount,
-                CreatedAt = r.CreatedAt,
-            });
-
-            // 5. Phân trang
-            var page = request.PageNumber <= 0 ? 1 : request.PageNumber;
-            var size = request.PageSize <= 0 ? 10 : request.PageSize;
-
-            var count = await dtoQuery.CountAsync(cancellationToken);
-            var items = await dtoQuery.Skip((page - 1) * size).Take(size).ToListAsync(cancellationToken);
-
-            var paginatedList = new PaginatedList<RecipeDto>(items, count, page, size);
-
-            return Result<PaginatedList<RecipeDto>>.Success(paginatedList);
+            var data = await query.Select(RecipeProjection.Summary).ToListAsync(ct);
+            var ordered = asc ? data.OrderBy(x => ranks.GetValueOrDefault(x.Id)) : data.OrderByDescending(x => ranks.GetValueOrDefault(x.Id));
+            var items = ordered.ThenBy(x => x.Id).Skip((page - 1) * size).Take(size).ToList();
+            foreach (var item in items) item.RelevanceScore = ranks.GetValueOrDefault(item.Id);
+            return Result<PaginatedList<RecipeDto>>.Success(new(items, data.Count, page, size));
         }
+        IOrderedQueryable<Recipe> sorted = request.SortBy?.ToLowerInvariant() switch
+        {
+            "title" => asc ? query.OrderBy(r => r.Title) : query.OrderByDescending(r => r.Title),
+            "views" => asc ? query.OrderBy(r => r.ViewCount) : query.OrderByDescending(r => r.ViewCount),
+            "rating" => asc ? query.OrderBy(r => r.RatingAverage) : query.OrderByDescending(r => r.RatingAverage),
+            "cooktime" => asc ? query.OrderBy(r => r.CookTimeMinutes) : query.OrderByDescending(r => r.CookTimeMinutes),
+            "totaltime" => asc ? query.OrderBy(r => r.PrepTimeMinutes + r.CookTimeMinutes) : query.OrderByDescending(r => r.PrepTimeMinutes + r.CookTimeMinutes),
+            _ => asc ? query.OrderBy(r => r.CreatedAt) : query.OrderByDescending(r => r.CreatedAt)
+        };
+        var count = await query.CountAsync(ct);
+        var list = await sorted.ThenBy(r => r.Id).Select(RecipeProjection.Summary).Skip((page - 1) * size).Take(size).ToListAsync(ct);
+        return Result<PaginatedList<RecipeDto>>.Success(new(list, count, page, size));
     }
+    public class SearchHit { public Guid Id { get; set; } public float Rank { get; set; } }
+}

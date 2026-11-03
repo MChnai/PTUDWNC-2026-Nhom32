@@ -44,11 +44,8 @@ public class ChangeRecipeStatusCommandHandler : IRequestHandler<ChangeRecipeStat
             return Result<Unit>.Failure("FORBIDDEN", "Bạn không có quyền thay đổi trạng thái công thức này.");
         }
 
-        // 2. Business Rule: Không chuyển sang cùng trạng thái hiện tại
-        if (recipe.Status == request.Status)
-        {
-            return Result<Unit>.Failure("NO_CHANGE", $"Công thức đã ở trạng thái {request.Status} rồi.");
-        }
+        if (!Enum.IsDefined(request.Status)) return Result<Unit>.Failure("INVALID_STATE", "Trạng thái không hợp lệ.");
+        if (recipe.Status == request.Status) return Result<Unit>.Success(Unit.Value);
 
         // 3. Business Rule: Chỉ cho phép Publish nếu công thức có ít nhất 1 bước (Step)
         if (request.Status == RecipeStatus.Published)
@@ -57,7 +54,7 @@ public class ChangeRecipeStatusCommandHandler : IRequestHandler<ChangeRecipeStat
             {
                 return Result<Unit>.Failure("INVALID_STATE", "Không thể xuất bản công thức chưa có bước thực hiện (Step) nào.");
             }
-            recipe.PublishedAt = DateTime.UtcNow;
+            recipe.PublishedAt ??= DateTime.UtcNow;
         }
 
         // 4. Cập nhật trạng thái

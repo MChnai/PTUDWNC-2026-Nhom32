@@ -1,24 +1,3 @@
-services:
-  # PostgreSQL 16 DBMS with Full-Text Search and unaccent
-  postgres:
-    image: postgres:16-alpine
-    container_name: culinaryblog-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: culinaryblog
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./scripts/init_postgresql16_schema_compatible.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
-      - ./scripts/02_seed_data.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d culinaryblog"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  pgdata:
+# Compatibility entry point. The canonical stack is at the repository root.
+include:
+  - ../docker-compose.yml

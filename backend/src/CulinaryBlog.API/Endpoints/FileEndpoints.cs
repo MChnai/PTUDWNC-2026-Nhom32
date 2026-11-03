@@ -40,6 +40,7 @@ public static class FileEndpoints
         })
         .WithName("UploadFile")
         .WithSummary("Upload file lên MinIO và tự động sinh thumbnail cho tệp ảnh (FR-FILE-001 & FR-JOB-002)")
+        .RequireRateLimiting("upload")
         .DisableAntiforgery()
         .Produces<Result<FileUploadedDto>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
@@ -70,6 +71,6 @@ public static class FileEndpoints
         .WithSummary("Xóa file khỏi MinIO S3 (FR-FILE-002)")
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
-        .RequireAuthorization();
+        .RequireAuthorization(policy => policy.RequireRole("Admin"));
     }
 }

@@ -1,3 +1,4 @@
+using CulinaryBlog.Application.Common.Helpers;
 using CulinaryBlog.Application.Common.Interfaces;
 using CulinaryBlog.Application.Common.Models;
 using CulinaryBlog.Application.Features.Auth.DTOs;
@@ -39,7 +40,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         // 1. Find refresh token in database including User
         var token = await _context.RefreshTokens
             .Include(rt => rt.User)
-            .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken.Trim(), cancellationToken);
+            .FirstOrDefaultAsync(rt => rt.Token == TokenHash.Compute(request.RefreshToken.Trim()), cancellationToken);
 
         // A1: Token not found
         if (token == null)
@@ -81,7 +82,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         }
 
         // A4: User check
-        if (token.User == null || token.User.IsDeleted)
+        if (token.User == null || token.User.IsDeleted || token.User.LockoutEnd > DateTimeOffset.UtcNow)
         {
             return Result<AuthResponseDto>.Failure("USER_INACTIVE", "Associated user account is no longer active.");
         }
@@ -90,7 +91,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         var newRefreshTokenString = _jwtService.GenerateRefreshToken();
         token.Revoke(
             ipAddress: clientIp, 
-            replacedByToken: newRefreshTokenString, 
+            replacedByToken: TokenHash.Compute(newRefreshTokenString), 
             reason: "Token rotation"
         );
 
@@ -103,7 +104,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         var newRefreshToken = new Domain.Entities.RefreshToken
         {
             UserId = token.UserId,
-            Token = newRefreshTokenString,
+            Token = TokenHash.Compute(newRefreshTokenString),
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             CreatedByIp = clientIp,
             CreatedAt = DateTime.UtcNow

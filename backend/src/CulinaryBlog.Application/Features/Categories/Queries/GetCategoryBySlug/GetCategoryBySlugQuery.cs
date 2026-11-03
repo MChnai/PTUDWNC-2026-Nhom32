@@ -44,7 +44,7 @@ public class GetCategoryBySlugQueryHandler : IRequestHandler<GetCategoryBySlugQu
         var recipesQuery = _context.Recipes
             .AsNoTracking()
             .Where(r => r.CategoryId == category.Id && !r.IsDeleted)
-            .Where(r => r.Status == RecipeStatus.Published || (request.CurrentUserId.HasValue && r.AuthorId == request.CurrentUserId.Value))
+            .Where(r => r.Status == RecipeStatus.Published || (request.CurrentUserId.HasValue && r.AuthorId == request.CurrentUserId.Value && r.Status == RecipeStatus.Draft))
             .OrderByDescending(r => r.CreatedAt);
 
         // 3. Phân trang

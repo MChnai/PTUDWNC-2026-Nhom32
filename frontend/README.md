@@ -1,75 +1,12 @@
-# React + TypeScript + Vite
+# Frontend — Next.js App Router
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Chạy `npm ci` và `npm run dev` tại **thư mục gốc repository**. Không còn dùng Vite. Cấu hình local: sao chép `.env.example` trong thư mục này thành `.env.local`.
 
-Currently, two official plugins are available:
+`BACKEND_URL` chỉ dùng phía server. `/api/v1/*` được route handler proxy tới .NET và quản lý cookie HttpOnly. Các trang công khai gọi API từ Server Components; không chuyển sang dữ liệu giả khi API không hoạt động.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `src/app`: route trang, SEO, API proxy.
+- `src/components`: bố cục, tìm kiếm, hướng dẫn nấu, tác giả và xác thực.
+- `src/lib`: hợp đồng dữ liệu, API client và sổ tay local.
+- `public/images`, `public/fonts`: tài nguyên cục bộ; nguồn tại `../docs/THIRD_PARTY.md`.
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
-
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+Tham khảo README ở thư mục gốc để chạy đầy đủ PostgreSQL/.NET/Redis/MinIO/SMTP.

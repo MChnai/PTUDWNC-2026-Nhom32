@@ -45,7 +45,7 @@ public class DeleteRecipeImageCommandHandler : IRequestHandler<DeleteRecipeImage
             return Result<Unit>.Failure("NOT_FOUND", "Không tìm thấy ảnh để xóa.");
         }
 
-        var imagePathToDelete = targetImage.OriginalUrl;
+        var imagePathsToDelete = new[] { targetImage.OriginalUrl, targetImage.ThumbnailUrl, targetImage.MediumUrl }.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x!).ToList();
         var wasPrimary = targetImage.IsPrimary;
 
         _context.RecipeImages.Remove(targetImage);
@@ -63,10 +63,10 @@ public class DeleteRecipeImageCommandHandler : IRequestHandler<DeleteRecipeImage
         await _context.SaveChangesAsync(cancellationToken);
 
         // Lên lịch Hangfire xóa file MinIO ngầm
-        if (!string.IsNullOrWhiteSpace(imagePathToDelete))
+        if (imagePathsToDelete.Count > 0)
         {
             _jobService.Enqueue<IFileCleanupService>(
-                service => service.DeleteRecipeImagesAsync(new List<string> { imagePathToDelete }, CancellationToken.None)
+                service => service.DeleteRecipeImagesAsync(imagePathsToDelete, CancellationToken.None)
             );
         }
 

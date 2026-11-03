@@ -43,27 +43,24 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        foreach (var entry in ChangeTracker.Entries())
+        ChangeTracker.DetectChanges();
+        var changed = ChangeTracker.Entries().Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted).ToList();
+        // All child mutations participate in the recipe's optimistic concurrency check.
+        var recipeIds = changed.Select(e => e.Entity switch
         {
-            if (entry.Entity is Domain.Common.BaseEntity baseEntity)
+            RecipeStep x => x.RecipeId, RecipeIngredient x => x.RecipeId, RecipeImage x => x.RecipeId, _ => Guid.Empty
+        }).Where(id => id != Guid.Empty).Distinct().ToArray();
+        foreach (var recipe in ChangeTracker.Entries<Recipe>().Where(e => recipeIds.Contains(e.Entity.Id) && e.State == EntityState.Unchanged))
+            recipe.Entity.UpdatedAt = DateTime.UtcNow;
+        foreach (var entry in changed)
+        {
+            if (entry.Entity is BaseEntity entity)
             {
-                if (entry.State == EntityState.Added)
-                {
-                    baseEntity.CreatedAt = DateTime.UtcNow;
-                }
-                else if (entry.State == EntityState.Modified)
-                {
-                    baseEntity.UpdatedAt = DateTime.UtcNow;
-                }
-                else if (entry.State == EntityState.Deleted)
-                {
-                    entry.State = EntityState.Modified;
-                    baseEntity.IsDeleted = true;
-                    baseEntity.DeletedAt = DateTime.UtcNow;
-                }
+                if (entry.State == EntityState.Added) entity.CreatedAt = DateTime.UtcNow;
+                else if (entry.State == EntityState.Modified) entity.UpdatedAt = DateTime.UtcNow;
+                // Deletions remain physical; recipe children cascade as FR-RCP-007 specifies.
             }
         }
-
         return await base.SaveChangesAsync(cancellationToken);
     }
 }

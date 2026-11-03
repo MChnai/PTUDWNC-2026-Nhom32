@@ -28,6 +28,7 @@ public class FileCleanupService : IFileCleanupService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi xóa file ảnh MinIO: {Path}", path);
+                throw; // Let Hangfire retry a failed cleanup.
             }
         }
     }

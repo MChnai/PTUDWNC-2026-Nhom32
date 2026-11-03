@@ -1,0 +1,1408 @@
+{
+  "categories": [
+    {
+      "id": "e43be126-23d5-5df7-8804-a403887cb7f5",
+      "name": "Bữa ăn xanh",
+      "slug": "bua-an-xanh",
+      "description": "Rau củ theo mùa, hương vị tươi mới và những bữa ăn đầy màu sắc."
+    },
+    {
+      "id": "9fa1ae47-b4ab-55f7-a417-e702221e9b86",
+      "name": "Mì & pasta",
+      "slug": "mi-pasta",
+      "description": "Một bát mì ấm hoặc một đĩa pasta thơm, đủ ngon để muốn vào bếp."
+    },
+    {
+      "id": "77c14ddb-511d-598c-ab7b-e36ce7310829",
+      "name": "Món Á",
+      "slug": "mon-a",
+      "description": "Hương vị châu Á gần gũi, đậm đà và dễ đưa vào bữa ăn gia đình."
+    },
+    {
+      "id": "7828bf3f-1699-5a33-9d00-23de60e89905",
+      "name": "Món Âu",
+      "slug": "mon-au",
+      "description": "Những món Âu dễ tiếp cận cho căn bếp tại nhà."
+    },
+    {
+      "id": "b2ab0baf-5557-5bf2-a360-7fbcd87ebf22",
+      "name": "Bữa sáng",
+      "slug": "bua-sang",
+      "description": "Bắt đầu ngày mới với bữa sáng giản dị và đủ đầy."
+    },
+    {
+      "id": "10208617-814f-5ea5-95ae-742a460293da",
+      "name": "Món chay",
+      "slug": "mon-chay",
+      "description": "Học cách kết hợp rau, đậu và ngũ cốc cho bữa chay phong phú."
+    }
+  ],
+  "authors": [
+    {
+      "id": "d43dd73d-d1b7-579e-9c70-886b13bb7fee",
+      "fullName": "An Nhiên",
+      "email": "chef1@culinary.local",
+      "username": "chef_1",
+      "role": "Author",
+      "bio": "Yêu rau củ theo mùa và những bữa ăn giản dị."
+    },
+    {
+      "id": "539a39fa-a910-5e95-a0ee-1aca46d62b16",
+      "fullName": "Minh An",
+      "email": "chef2@culinary.local",
+      "username": "chef_2",
+      "role": "Author",
+      "bio": "Ghi lại các công thức món Á cho căn bếp tại nhà."
+    },
+    {
+      "id": "79921df6-dd90-5a0c-89de-fb31ab9f0186",
+      "fullName": "Linh Chi",
+      "email": "chef3@culinary.local",
+      "username": "chef_3",
+      "role": "Author",
+      "bio": "Thích thử những món Âu dễ làm vào cuối tuần."
+    },
+    {
+      "id": "485a2094-f94d-5877-8d49-869111c73427",
+      "fullName": "Hoài Nam",
+      "email": "chef4@culinary.local",
+      "username": "chef_4",
+      "role": "Author",
+      "bio": "Tìm niềm vui trong bữa sáng và món chay mỗi ngày."
+    }
+  ],
+  "recipes": [
+    {
+      "id": "f90590cc-aef9-56b9-a7c6-00b7b0dfb7cd",
+      "title": "Salad cầu vồng với sốt chanh",
+      "slug": "salad-cau-vong-sot-chanh",
+      "description": "Rau củ giòn mát, đậu hũ vàng nhẹ và sốt chanh thanh dịu. Một bát đầy màu sắc cho những ngày muốn ăn thật tươi.",
+      "notes": "Nếu dùng rau ăn sống, hãy rửa kỹ và dùng dụng cụ sạch. Phần đậu hũ có thể thay bằng đậu gà đã nấu chín.",
+      "prepTimeMinutes": 15,
+      "cookTimeMinutes": 5,
+      "servings": 2,
+      "difficulty": 1,
+      "categoryId": "e43be126-23d5-5df7-8804-a403887cb7f5",
+      "authorId": "d43dd73d-d1b7-579e-9c70-886b13bb7fee",
+      "ingredients": [
+        {
+          "name": "xà lách",
+          "quantity": 120,
+          "unit": "g",
+          "notes": "Rửa và để ráo",
+          "orderIndex": 1
+        },
+        {
+          "name": "cà chua bi",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "Cắt đôi",
+          "orderIndex": 2
+        },
+        {
+          "name": "bắp ngọt đã luộc",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 3
+        },
+        {
+          "name": "đậu Hà Lan đã chín",
+          "quantity": 60,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 4
+        },
+        {
+          "name": "đậu hũ chắc",
+          "quantity": 150,
+          "unit": "g",
+          "notes": "Cắt miếng",
+          "orderIndex": 5
+        },
+        {
+          "name": "dầu olive",
+          "quantity": 2,
+          "unit": "thìa canh",
+          "notes": "Dùng thìa đong 15 ml",
+          "orderIndex": 6
+        },
+        {
+          "name": "nước cốt chanh",
+          "quantity": 1,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 7
+        },
+        {
+          "name": "muối",
+          "quantity": 0.25,
+          "unit": "thìa cà phê",
+          "notes": "Điều chỉnh theo khẩu vị",
+          "orderIndex": 8
+        }
+      ],
+      "steps": [
+        {
+          "stepNumber": 1,
+          "title": "Sơ chế rau củ",
+          "description": "Rửa rau và cà chua dưới nước sạch. Để rau ráo, cắt cà chua làm đôi. Chuẩn bị bắp và đậu Hà Lan đã nấu chín.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 2,
+          "title": "Áp chảo đậu hũ",
+          "description": "Thấm khô đậu hũ. Làm nóng chảo với một thìa canh dầu, áp chảo từng mặt đến khi vàng nhẹ và nóng đều.",
+          "timerMinutes": 5
+        },
+        {
+          "stepNumber": 3,
+          "title": "Pha sốt",
+          "description": "Khuấy nước cốt chanh, một thìa canh dầu olive và muối trong bát nhỏ đến khi hòa quyện.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 4,
+          "title": "Xếp bát salad",
+          "description": "Cho rau vào bát. Xếp bắp, đậu, cà chua và đậu hũ phía trên để mỗi phần có đủ màu sắc.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 5,
+          "title": "Trộn và thưởng thức",
+          "description": "Rưới sốt ngay trước khi ăn, trộn nhẹ tay và nếm lại bằng dụng cụ sạch. Dùng ngay để rau còn giòn.",
+          "timerMinutes": null
+        }
+      ],
+      "images": [
+        {
+          "originalUrl": "/images/salad-cau-vong.webp",
+          "altText": "Salad cầu vồng với sốt chanh",
+          "isPrimary": true,
+          "displayOrder": 1
+        }
+      ]
+    },
+    {
+      "id": "2997ddb4-4cb2-5cfa-91e8-8fb39defd911",
+      "title": "Mì Ý pesto xanh cho ngày bận rộn",
+      "slug": "mi-y-pesto-xanh",
+      "description": "Pasta nơ phủ sốt húng quế thơm mát, thêm cà chua bi ngọt dịu. Gọn gàng, dễ làm và vừa vặn cho một buổi tối nhiều việc.",
+      "notes": "Món có sữa và hạt. Có thể bỏ phô mai hoặc dùng sản phẩm thay thế phù hợp khi cần, đồng thời kiểm tra nhãn nguyên liệu.",
+      "prepTimeMinutes": 10,
+      "cookTimeMinutes": 15,
+      "servings": 2,
+      "difficulty": 1,
+      "categoryId": "9fa1ae47-b4ab-55f7-a417-e702221e9b86",
+      "authorId": "79921df6-dd90-5a0c-89de-fb31ab9f0186",
+      "ingredients": [
+        {
+          "name": "mì pasta nơ",
+          "quantity": 180,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 1
+        },
+        {
+          "name": "lá húng quế",
+          "quantity": 30,
+          "unit": "g",
+          "notes": "Rửa sạch, thấm khô",
+          "orderIndex": 2
+        },
+        {
+          "name": "dầu olive",
+          "quantity": 3,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 3
+        },
+        {
+          "name": "hạt điều rang không muối",
+          "quantity": 25,
+          "unit": "g",
+          "notes": "Có thể thay bằng hạt thông",
+          "orderIndex": 4
+        },
+        {
+          "name": "phô mai Parmesan",
+          "quantity": 20,
+          "unit": "g",
+          "notes": "Bào nhỏ",
+          "orderIndex": 5
+        },
+        {
+          "name": "tỏi",
+          "quantity": 1,
+          "unit": "tép",
+          "notes": "Bóc vỏ",
+          "orderIndex": 6
+        },
+        {
+          "name": "cà chua bi",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "Cắt đôi",
+          "orderIndex": 7
+        },
+        {
+          "name": "muối",
+          "quantity": 0.5,
+          "unit": "thìa cà phê",
+          "notes": "Chia cho nước luộc và sốt",
+          "orderIndex": 8
+        }
+      ],
+      "steps": [
+        {
+          "stepNumber": 1,
+          "title": "Chuẩn bị sốt pesto",
+          "description": "Cho húng quế, hạt điều, tỏi, phô mai và dầu olive vào cối xay. Xay từng nhịp đến khi vừa nhuyễn; nêm một ít muối.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 2,
+          "title": "Đun nước luộc mì",
+          "description": "Đun một nồi nước đủ rộng. Khi sôi, thêm một chút muối và cho mì vào, khuấy để mì không dính.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 3,
+          "title": "Luộc mì",
+          "description": "Luộc theo hướng dẫn trên bao bì đến khi vừa chín tới. Thời gian ước tính 10 phút; kiểm tra lại loại mì đang dùng. Giữ lại một ít nước luộc.",
+          "timerMinutes": 10
+        },
+        {
+          "stepNumber": 4,
+          "title": "Trộn mì với sốt",
+          "description": "Để mì ráo. Trộn với sốt pesto ngoài bếp, thêm từng thìa nước luộc để sốt bám đều mà không bị khô.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 5,
+          "title": "Hoàn thiện đĩa mì",
+          "description": "Thêm cà chua bi, trộn nhẹ và nếm lại. Chia ra đĩa, rắc thêm phô mai nếu thích và dùng ngay.",
+          "timerMinutes": null
+        }
+      ],
+      "images": [
+        {
+          "originalUrl": "/images/pasta-pesto.webp",
+          "altText": "Mì Ý pesto xanh cho ngày bận rộn",
+          "isPrimary": true,
+          "displayOrder": 1
+        }
+      ]
+    },
+    {
+      "id": "94ec7678-3427-56da-bc09-b01a59d9001a",
+      "title": "Ramen gà và trứng cho bữa tối ấm",
+      "slug": "ramen-ga-va-trung",
+      "description": "Nước dùng ấm, mì mềm vừa và trứng chín béo bùi. Một bữa tối nhẹ nhàng để cả nhà quây quần bên nhau.",
+      "notes": "Thời gian chín phụ thuộc kích thước thịt. Hẹn giờ chỉ là nhắc việc; kiểm tra nhiệt độ thực phẩm trước khi ăn.",
+      "prepTimeMinutes": 15,
+      "cookTimeMinutes": 25,
+      "servings": 2,
+      "difficulty": 1,
+      "categoryId": "77c14ddb-511d-598c-ab7b-e36ce7310829",
+      "authorId": "539a39fa-a910-5e95-a0ee-1aca46d62b16",
+      "ingredients": [
+        {
+          "name": "mì ramen",
+          "quantity": 180,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 1
+        },
+        {
+          "name": "thịt gà không xương",
+          "quantity": 200,
+          "unit": "g",
+          "notes": "Cắt miếng vừa",
+          "orderIndex": 2
+        },
+        {
+          "name": "trứng",
+          "quantity": 2,
+          "unit": "quả",
+          "notes": "",
+          "orderIndex": 3
+        },
+        {
+          "name": "nước dùng gà",
+          "quantity": 800,
+          "unit": "ml",
+          "notes": "",
+          "orderIndex": 4
+        },
+        {
+          "name": "cà rốt",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "Thái mỏng",
+          "orderIndex": 5
+        },
+        {
+          "name": "nấm",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 6
+        },
+        {
+          "name": "nước tương",
+          "quantity": 1,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 7
+        },
+        {
+          "name": "dầu ăn",
+          "quantity": 1,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 8
+        },
+        {
+          "name": "hành lá",
+          "quantity": 10,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 9
+        }
+      ],
+      "steps": [
+        {
+          "stepNumber": 1,
+          "title": "Chuẩn bị rau và dụng cụ",
+          "description": "Rửa rau, cắt cà rốt và nấm. Để thịt gà ở khay riêng, dùng thớt và dao riêng hoặc vệ sinh kỹ trước khi chuyển sang rau.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 2,
+          "title": "Nấu trứng",
+          "description": "Cho trứng vào nồi với nước ngập, đun sôi nhẹ và luộc đến khi cả lòng trắng lẫn lòng đỏ đông đặc. Làm nguội đủ để bóc vỏ.",
+          "timerMinutes": 10
+        },
+        {
+          "stepNumber": 3,
+          "title": "Làm chín thịt gà",
+          "description": "Đun nước dùng. Cho thịt gà vào, nấu đến khi chín hoàn toàn; dùng nhiệt kế thực phẩm kiểm tra phần dày đạt ít nhất 74°C.",
+          "timerMinutes": 10
+        },
+        {
+          "stepNumber": 4,
+          "title": "Thêm rau và mì",
+          "description": "Cho cà rốt, nấm vào nước dùng, nấu mềm. Luộc mì theo thời gian trên bao bì, tránh để mì nở quá lâu.",
+          "timerMinutes": 5
+        },
+        {
+          "stepNumber": 5,
+          "title": "Xếp bát ramen",
+          "description": "Nêm nước tương từ từ. Chia mì và nước dùng ra bát, thêm gà, trứng chín cắt đôi và hành lá. Dùng nóng.",
+          "timerMinutes": null
+        }
+      ],
+      "images": [
+        {
+          "originalUrl": "/images/ramen-trung.webp",
+          "altText": "Ramen gà và trứng cho bữa tối ấm",
+          "isPrimary": true,
+          "displayOrder": 1
+        }
+      ]
+    },
+    {
+      "id": "8c18a967-ac76-5091-8533-4a299c3ec1a8",
+      "title": "Salad ngũ cốc và rau củ áp chảo",
+      "slug": "salad-ngu-coc-rau-cu",
+      "description": "Ngũ cốc tơi mềm, rau củ vừa chín tới và chút sốt chanh. Một cách kết hợp đơn giản cho bữa trưa tại nhà.",
+      "notes": "",
+      "prepTimeMinutes": 15,
+      "cookTimeMinutes": 15,
+      "servings": 2,
+      "difficulty": 1,
+      "categoryId": "e43be126-23d5-5df7-8804-a403887cb7f5",
+      "authorId": "d43dd73d-d1b7-579e-9c70-886b13bb7fee",
+      "ingredients": [
+        {
+          "name": "quinoa khô",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "Rửa theo hướng dẫn bao bì",
+          "orderIndex": 1
+        },
+        {
+          "name": "nước",
+          "quantity": 220,
+          "unit": "ml",
+          "notes": "Điều chỉnh theo loại hạt",
+          "orderIndex": 2
+        },
+        {
+          "name": "đậu que",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 3
+        },
+        {
+          "name": "cà chua bi",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 4
+        },
+        {
+          "name": "cà rốt",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 5
+        },
+        {
+          "name": "dầu olive",
+          "quantity": 2,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 6
+        },
+        {
+          "name": "nước cốt chanh",
+          "quantity": 1,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 7
+        },
+        {
+          "name": "muối",
+          "quantity": 0.25,
+          "unit": "thìa cà phê",
+          "notes": "",
+          "orderIndex": 8
+        }
+      ],
+      "steps": [
+        {
+          "stepNumber": 1,
+          "title": "Nấu quinoa",
+          "description": "Rửa quinoa theo hướng dẫn bao bì. Nấu với nước đến khi hạt nở mềm, sau đó tắt bếp và xới tơi bằng nĩa.",
+          "timerMinutes": 15
+        },
+        {
+          "stepNumber": 2,
+          "title": "Sơ chế rau",
+          "description": "Rửa đậu que, cà chua và cà rốt. Bỏ đầu đậu que, cắt rau thành miếng vừa ăn.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 3,
+          "title": "Làm chín rau củ",
+          "description": "Làm nóng chảo với một thìa canh dầu. Cho cà rốt và đậu que vào, thêm một ít nước và đảo đến khi chín vừa, còn độ giòn.",
+          "timerMinutes": 7
+        },
+        {
+          "stepNumber": 4,
+          "title": "Pha sốt chanh",
+          "description": "Khuấy dầu olive còn lại với nước chanh và muối. Thử một ít để điều chỉnh độ chua trước khi trộn.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 5,
+          "title": "Trộn và trình bày",
+          "description": "Cho quinoa, rau chín và cà chua vào bát. Trộn sốt, chia phần và dùng khi món còn mới.",
+          "timerMinutes": null
+        }
+      ],
+      "images": [
+        {
+          "originalUrl": "/images/salad-ngu-coc.webp",
+          "altText": "Salad ngũ cốc và rau củ áp chảo",
+          "isPrimary": true,
+          "displayOrder": 1
+        }
+      ]
+    },
+    {
+      "id": "016cb341-7b00-5e5a-9be4-1b0428a57905",
+      "title": "Pizza rau củ tại nhà",
+      "slug": "pizza-rau-cu-tai-nha",
+      "description": "Viền bánh vàng, rau củ thơm và phô mai tan chảy. Dùng đế làm sẵn để có một bữa tối cuối tuần thật vui.",
+      "notes": "Đế làm sẵn có thời gian nướng khác nhau. Ưu tiên hướng dẫn của sản phẩm và theo dõi bánh trong lò.",
+      "prepTimeMinutes": 15,
+      "cookTimeMinutes": 20,
+      "servings": 2,
+      "difficulty": 1,
+      "categoryId": "7828bf3f-1699-5a33-9d00-23de60e89905",
+      "authorId": "79921df6-dd90-5a0c-89de-fb31ab9f0186",
+      "ingredients": [
+        {
+          "name": "đế pizza làm sẵn",
+          "quantity": 1,
+          "unit": "cái",
+          "notes": "Khoảng 25–28 cm",
+          "orderIndex": 1
+        },
+        {
+          "name": "sốt cà chua",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 2
+        },
+        {
+          "name": "phô mai mozzarella",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 3
+        },
+        {
+          "name": "ớt chuông",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "Thái lát mỏng",
+          "orderIndex": 4
+        },
+        {
+          "name": "nấm",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "Thái lát",
+          "orderIndex": 5
+        },
+        {
+          "name": "dầu olive",
+          "quantity": 1,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 6
+        },
+        {
+          "name": "lá oregano khô",
+          "quantity": 0.5,
+          "unit": "thìa cà phê",
+          "notes": "",
+          "orderIndex": 7
+        }
+      ],
+      "steps": [
+        {
+          "stepNumber": 1,
+          "title": "Làm nóng lò",
+          "description": "Làm nóng lò theo hướng dẫn của đế pizza; thông thường khoảng 220°C. Chuẩn bị khay chịu nhiệt phù hợp.",
+          "timerMinutes": 10
+        },
+        {
+          "stepNumber": 2,
+          "title": "Chuẩn bị rau",
+          "description": "Rửa ớt chuông và làm sạch nấm, để ráo rồi thái lát mỏng để rau chín đều khi nướng.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 3,
+          "title": "Phủ đế bánh",
+          "description": "Phết sốt cà chua lên đế, chừa viền khoảng 1 cm. Rải phô mai, rau củ và lá oregano.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 4,
+          "title": "Nướng bánh",
+          "description": "Nướng theo hướng dẫn trên bao bì đế bánh, khoảng 15–20 phút, đến khi viền bánh vàng và nhân nóng đều. Theo dõi lò để tránh cháy.",
+          "timerMinutes": 18
+        },
+        {
+          "stepNumber": 5,
+          "title": "Cắt và dùng",
+          "description": "Lấy khay bằng găng cách nhiệt, để bánh nghỉ ngắn cho phô mai ổn định rồi cắt miếng. Dùng khi còn ấm.",
+          "timerMinutes": null
+        }
+      ],
+      "images": [
+        {
+          "originalUrl": "/images/pizza-rau-cu.webp",
+          "altText": "Pizza rau củ tại nhà",
+          "isPrimary": true,
+          "displayOrder": 1
+        }
+      ]
+    },
+    {
+      "id": "deacba08-bb79-57f0-bdc1-20a8052cbc25",
+      "title": "Cà ri gà ấm vị gia đình",
+      "slug": "ca-ri-ga-gia-dinh",
+      "description": "Gà mềm, rau củ ngọt và nước cà ri thơm dịu. Một nồi ấm áp cho bữa ăn gia đình cuối tuần.",
+      "notes": "Không dựa riêng vào thời gian hay màu thịt để xác định độ chín. Dùng nhiệt kế thực phẩm kiểm tra thịt gà.",
+      "prepTimeMinutes": 20,
+      "cookTimeMinutes": 35,
+      "servings": 4,
+      "difficulty": 1,
+      "categoryId": "77c14ddb-511d-598c-ab7b-e36ce7310829",
+      "authorId": "539a39fa-a910-5e95-a0ee-1aca46d62b16",
+      "ingredients": [
+        {
+          "name": "thịt gà không xương",
+          "quantity": 500,
+          "unit": "g",
+          "notes": "Cắt miếng vừa",
+          "orderIndex": 1
+        },
+        {
+          "name": "khoai tây",
+          "quantity": 300,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 2
+        },
+        {
+          "name": "cà rốt",
+          "quantity": 150,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 3
+        },
+        {
+          "name": "hành tây",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 4
+        },
+        {
+          "name": "nước cốt dừa",
+          "quantity": 250,
+          "unit": "ml",
+          "notes": "",
+          "orderIndex": 5
+        },
+        {
+          "name": "nước dùng",
+          "quantity": 350,
+          "unit": "ml",
+          "notes": "",
+          "orderIndex": 6
+        },
+        {
+          "name": "bột cà ri",
+          "quantity": 2,
+          "unit": "thìa canh",
+          "notes": "Theo độ đậm nhạt sản phẩm",
+          "orderIndex": 7
+        },
+        {
+          "name": "dầu ăn",
+          "quantity": 1,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 8
+        },
+        {
+          "name": "muối",
+          "quantity": 0.5,
+          "unit": "thìa cà phê",
+          "notes": "Nêm dần",
+          "orderIndex": 9
+        }
+      ],
+      "steps": [
+        {
+          "stepNumber": 1,
+          "title": "Chuẩn bị nguyên liệu",
+          "description": "Rửa và gọt rau củ, cắt miếng vừa. Để thịt gà ở khay riêng; vệ sinh tay và dụng cụ sau khi chạm vào thịt sống.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 2,
+          "title": "Xào nền hương vị",
+          "description": "Làm nóng dầu trong nồi. Phi hành tây đến trong, thêm bột cà ri và đảo nhẹ khoảng 30 giây để dậy mùi.",
+          "timerMinutes": 4
+        },
+        {
+          "stepNumber": 3,
+          "title": "Nấu thịt gà",
+          "description": "Cho gà vào đảo, thêm nước dùng rồi đun sôi nhẹ. Hạ lửa để nồi sôi lăn tăn.",
+          "timerMinutes": 10
+        },
+        {
+          "stepNumber": 4,
+          "title": "Thêm củ và nước dừa",
+          "description": "Thêm khoai, cà rốt và nước cốt dừa. Nấu nhỏ lửa đến khi củ mềm và thịt gà chín hoàn toàn; phần thịt dày cần đạt ít nhất 74°C.",
+          "timerMinutes": 20
+        },
+        {
+          "stepNumber": 5,
+          "title": "Nêm và hoàn thiện",
+          "description": "Nêm muối từ từ, khuấy nhẹ để không làm nát khoai. Dùng nóng với cơm hoặc bánh mì.",
+          "timerMinutes": null
+        }
+      ],
+      "images": [
+        {
+          "originalUrl": "/images/ca-ri-ga.webp",
+          "altText": "Cà ri gà ấm vị gia đình",
+          "isPrimary": true,
+          "displayOrder": 1
+        }
+      ]
+    },
+    {
+      "id": "f8497da7-7ed1-5d98-b98c-21725174d9fd",
+      "title": "Salad đậu gà và rau xanh",
+      "slug": "salad-dau-ga-rau-xanh",
+      "description": "Đậu gà bùi, rau xanh giòn và sốt chanh dịu. Không cần bật bếp nếu bạn đã có sẵn các nguyên liệu chín.",
+      "notes": "",
+      "prepTimeMinutes": 15,
+      "cookTimeMinutes": 0,
+      "servings": 2,
+      "difficulty": 1,
+      "categoryId": "10208617-814f-5ea5-95ae-742a460293da",
+      "authorId": "485a2094-f94d-5877-8d49-869111c73427",
+      "ingredients": [
+        {
+          "name": "đậu gà đã nấu chín",
+          "quantity": 200,
+          "unit": "g",
+          "notes": "Nếu dùng hộp, để ráo",
+          "orderIndex": 1
+        },
+        {
+          "name": "rau xà lách",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 2
+        },
+        {
+          "name": "cà chua",
+          "quantity": 120,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 3
+        },
+        {
+          "name": "dưa leo",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 4
+        },
+        {
+          "name": "bắp đã luộc",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 5
+        },
+        {
+          "name": "dầu olive",
+          "quantity": 2,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 6
+        },
+        {
+          "name": "nước cốt chanh",
+          "quantity": 1,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 7
+        },
+        {
+          "name": "muối",
+          "quantity": 0.25,
+          "unit": "thìa cà phê",
+          "notes": "",
+          "orderIndex": 8
+        }
+      ],
+      "steps": [
+        {
+          "stepNumber": 1,
+          "title": "Chuẩn bị đậu",
+          "description": "Để ráo đậu gà đã nấu chín. Nếu dùng đậu hộp, rửa theo hướng dẫn sản phẩm và để thật ráo.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 2,
+          "title": "Rửa rau củ",
+          "description": "Rửa xà lách, cà chua và dưa leo, để ráo. Cắt rau củ thành miếng dễ ăn.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 3,
+          "title": "Pha nước trộn",
+          "description": "Khuấy nước chanh, dầu olive và muối trong bát nhỏ. Nếm điều chỉnh theo khẩu vị.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 4,
+          "title": "Trộn nhẹ",
+          "description": "Cho rau, đậu gà và bắp vào bát lớn. Rưới sốt vừa đủ, đảo nhẹ để rau không bị dập.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 5,
+          "title": "Thưởng thức",
+          "description": "Chia ra đĩa và dùng ngay. Nếu chưa ăn, để sốt riêng và bảo quản các thành phần trong tủ lạnh.",
+          "timerMinutes": null
+        }
+      ],
+      "images": [
+        {
+          "originalUrl": "/images/salad-dau-ga.webp",
+          "altText": "Salad đậu gà và rau xanh",
+          "isPrimary": true,
+          "displayOrder": 1
+        }
+      ]
+    },
+    {
+      "id": "55ac0f8e-4fd7-5527-983c-1b504bc33ed9",
+      "title": "Bát rau củ xanh cho buổi sáng",
+      "slug": "bat-rau-cu-xanh-buoi-sang",
+      "description": "Bơ mềm, đậu gà bùi và rau củ đầy màu sắc. Một buổi sáng chậm rãi với bữa ăn tự tay chuẩn bị.",
+      "notes": "",
+      "prepTimeMinutes": 15,
+      "cookTimeMinutes": 5,
+      "servings": 2,
+      "difficulty": 1,
+      "categoryId": "b2ab0baf-5557-5bf2-a360-7fbcd87ebf22",
+      "authorId": "485a2094-f94d-5877-8d49-869111c73427",
+      "ingredients": [
+        {
+          "name": "bánh mì nguyên cám",
+          "quantity": 2,
+          "unit": "lát",
+          "notes": "",
+          "orderIndex": 1
+        },
+        {
+          "name": "bơ",
+          "quantity": 1,
+          "unit": "quả",
+          "notes": "Chín vừa",
+          "orderIndex": 2
+        },
+        {
+          "name": "đậu gà đã chín",
+          "quantity": 120,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 3
+        },
+        {
+          "name": "cà chua bi",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 4
+        },
+        {
+          "name": "rau xà lách",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 5
+        },
+        {
+          "name": "dưa leo",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 6
+        },
+        {
+          "name": "nước cốt chanh",
+          "quantity": 1,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 7
+        },
+        {
+          "name": "dầu olive",
+          "quantity": 1,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 8
+        }
+      ],
+      "steps": [
+        {
+          "stepNumber": 1,
+          "title": "Chuẩn bị rau",
+          "description": "Rửa xà lách, dưa leo và cà chua. Để ráo, cắt rau thành miếng nhỏ.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 2,
+          "title": "Sơ chế bơ",
+          "description": "Bổ bơ trên thớt vững, lấy phần thịt và thái lát. Rưới một ít nước chanh để bơ giữ màu.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 3,
+          "title": "Làm giòn bánh mì",
+          "description": "Nướng bánh mì theo dụng cụ đang dùng đến khi vừa giòn, theo dõi để không cháy.",
+          "timerMinutes": 3
+        },
+        {
+          "stepNumber": 4,
+          "title": "Xếp bát sáng",
+          "description": "Cho rau vào bát, xếp đậu gà chín, cà chua, dưa leo và bơ lên trên.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 5,
+          "title": "Hoàn thiện",
+          "description": "Trộn dầu olive với phần chanh còn lại, rưới lên bát và dùng cùng bánh mì giòn.",
+          "timerMinutes": null
+        }
+      ],
+      "images": [
+        {
+          "originalUrl": "/images/hero.webp",
+          "altText": "Bát rau củ xanh cho buổi sáng",
+          "isPrimary": true,
+          "displayOrder": 1
+        }
+      ]
+    },
+    {
+      "id": "cad94daf-70a8-5e57-8d6c-a4a95764dcbf",
+      "title": "Pasta rau củ sốt olive",
+      "slug": "pasta-rau-cu-sot-olive",
+      "description": "Đĩa pasta gọn nhẹ, rau củ tươi và dầu olive thơm dịu. Một biến tấu dễ làm từ những nguyên liệu sẵn trong bếp.",
+      "notes": "Có thể thêm lá thơm nếu thích. Dùng mì không chứa trứng khi cần một món chay thuần thực vật.",
+      "prepTimeMinutes": 10,
+      "cookTimeMinutes": 15,
+      "servings": 2,
+      "difficulty": 1,
+      "categoryId": "9fa1ae47-b4ab-55f7-a417-e702221e9b86",
+      "authorId": "79921df6-dd90-5a0c-89de-fb31ab9f0186",
+      "ingredients": [
+        {
+          "name": "mì pasta nơ",
+          "quantity": 180,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 1
+        },
+        {
+          "name": "dầu olive",
+          "quantity": 3,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 3
+        },
+        {
+          "name": "cà chua bi",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "Cắt đôi",
+          "orderIndex": 7
+        },
+        {
+          "name": "muối",
+          "quantity": 0.5,
+          "unit": "thìa cà phê",
+          "notes": "Chia cho nước luộc và sốt",
+          "orderIndex": 8
+        },
+        {
+          "name": "ớt chuông",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "Cắt nhỏ",
+          "orderIndex": 9
+        }
+      ],
+      "steps": [
+        {
+          "stepNumber": 1,
+          "title": "Chuẩn bị rau củ",
+          "description": "Rửa ớt chuông và cà chua. Cắt ớt thành miếng nhỏ, cà chua làm đôi. Đong dầu olive.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 2,
+          "title": "Đun nước luộc mì",
+          "description": "Đun một nồi nước đủ rộng. Khi sôi, thêm một chút muối và cho mì vào, khuấy để mì không dính.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 3,
+          "title": "Luộc mì",
+          "description": "Luộc theo hướng dẫn trên bao bì đến khi vừa chín tới. Thời gian ước tính 10 phút; kiểm tra lại loại mì đang dùng. Giữ lại một ít nước luộc.",
+          "timerMinutes": 10
+        },
+        {
+          "stepNumber": 4,
+          "title": "Xào rau và trộn mì",
+          "description": "Dùng hai thìa canh dầu olive xào ớt chuông đến khi chín vừa. Cho mì đã luộc vào, thêm một ít nước luộc và trộn đều. Nêm muối từ từ.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 5,
+          "title": "Hoàn thiện đĩa mì",
+          "description": "Thêm cà chua bi, trộn nhẹ và nếm lại. Chia ra đĩa, rắc thêm phô mai nếu thích và dùng ngay.",
+          "timerMinutes": null
+        }
+      ],
+      "images": [
+        {
+          "originalUrl": "/images/pasta-pesto.webp",
+          "altText": "Mì Ý pesto xanh cho ngày bận rộn",
+          "isPrimary": true,
+          "displayOrder": 1
+        }
+      ]
+    },
+    {
+      "id": "5ddb5f35-eb84-5ff6-a913-58d20e4e1591",
+      "title": "Bát ngũ cốc đậu gà",
+      "slug": "bat-ngu-coc-dau-ga",
+      "description": "Quinoa mềm tơi kết hợp đậu gà và rau củ. Một bữa chay gần gũi cho ngày muốn đổi vị.",
+      "notes": "",
+      "prepTimeMinutes": 15,
+      "cookTimeMinutes": 15,
+      "servings": 2,
+      "difficulty": 1,
+      "categoryId": "10208617-814f-5ea5-95ae-742a460293da",
+      "authorId": "d43dd73d-d1b7-579e-9c70-886b13bb7fee",
+      "ingredients": [
+        {
+          "name": "quinoa khô",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "Rửa theo hướng dẫn bao bì",
+          "orderIndex": 1
+        },
+        {
+          "name": "nước",
+          "quantity": 220,
+          "unit": "ml",
+          "notes": "Điều chỉnh theo loại hạt",
+          "orderIndex": 2
+        },
+        {
+          "name": "đậu que",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 3
+        },
+        {
+          "name": "cà chua bi",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 4
+        },
+        {
+          "name": "cà rốt",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 5
+        },
+        {
+          "name": "dầu olive",
+          "quantity": 2,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 6
+        },
+        {
+          "name": "nước cốt chanh",
+          "quantity": 1,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 7
+        },
+        {
+          "name": "muối",
+          "quantity": 0.25,
+          "unit": "thìa cà phê",
+          "notes": "",
+          "orderIndex": 8
+        },
+        {
+          "name": "đậu gà đã nấu chín",
+          "quantity": 150,
+          "unit": "g",
+          "notes": "Để ráo",
+          "orderIndex": 9
+        }
+      ],
+      "steps": [
+        {
+          "stepNumber": 1,
+          "title": "Nấu quinoa",
+          "description": "Rửa quinoa theo hướng dẫn bao bì. Nấu với nước đến khi hạt nở mềm, sau đó tắt bếp và xới tơi bằng nĩa.",
+          "timerMinutes": 15
+        },
+        {
+          "stepNumber": 2,
+          "title": "Sơ chế rau",
+          "description": "Rửa đậu que, cà chua và cà rốt. Bỏ đầu đậu que, cắt rau thành miếng vừa ăn.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 3,
+          "title": "Làm chín rau củ",
+          "description": "Làm nóng chảo với một thìa canh dầu. Cho cà rốt và đậu que vào, thêm một ít nước và đảo đến khi chín vừa, còn độ giòn.",
+          "timerMinutes": 7
+        },
+        {
+          "stepNumber": 4,
+          "title": "Pha sốt chanh",
+          "description": "Khuấy dầu olive còn lại với nước chanh và muối. Thử một ít để điều chỉnh độ chua trước khi trộn.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 5,
+          "title": "Trộn và trình bày",
+          "description": "Cho quinoa, đậu gà đã nấu chín, rau chín và cà chua vào bát. Trộn sốt, chia phần và dùng ngay.",
+          "timerMinutes": null
+        }
+      ],
+      "images": [
+        {
+          "originalUrl": "/images/salad-ngu-coc.webp",
+          "altText": "Salad ngũ cốc và rau củ áp chảo",
+          "isPrimary": true,
+          "displayOrder": 1
+        }
+      ]
+    },
+    {
+      "id": "c8c23ee7-f3b0-5a9c-89a8-41e89e294297",
+      "title": "Salad rau củ với hạt điều",
+      "slug": "salad-rau-cu-hat-dieu",
+      "description": "Thêm chút hạt điều rang cho bát rau củ giòn vui. Trộn sốt ngay trước khi ăn để giữ độ tươi.",
+      "notes": "",
+      "prepTimeMinutes": 15,
+      "cookTimeMinutes": 0,
+      "servings": 2,
+      "difficulty": 1,
+      "categoryId": "e43be126-23d5-5df7-8804-a403887cb7f5",
+      "authorId": "485a2094-f94d-5877-8d49-869111c73427",
+      "ingredients": [
+        {
+          "name": "đậu gà đã nấu chín",
+          "quantity": 200,
+          "unit": "g",
+          "notes": "Nếu dùng hộp, để ráo",
+          "orderIndex": 1
+        },
+        {
+          "name": "rau xà lách",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 2
+        },
+        {
+          "name": "cà chua",
+          "quantity": 120,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 3
+        },
+        {
+          "name": "dưa leo",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 4
+        },
+        {
+          "name": "bắp đã luộc",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 5
+        },
+        {
+          "name": "dầu olive",
+          "quantity": 2,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 6
+        },
+        {
+          "name": "nước cốt chanh",
+          "quantity": 1,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 7
+        },
+        {
+          "name": "muối",
+          "quantity": 0.25,
+          "unit": "thìa cà phê",
+          "notes": "",
+          "orderIndex": 8
+        },
+        {
+          "name": "hạt điều rang không muối",
+          "quantity": 30,
+          "unit": "g",
+          "notes": "Món có hạt",
+          "orderIndex": 9
+        }
+      ],
+      "steps": [
+        {
+          "stepNumber": 1,
+          "title": "Chuẩn bị đậu",
+          "description": "Để ráo đậu gà đã nấu chín. Nếu dùng đậu hộp, rửa theo hướng dẫn sản phẩm và để thật ráo.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 2,
+          "title": "Rửa rau củ",
+          "description": "Rửa xà lách, cà chua và dưa leo, để ráo. Cắt rau củ thành miếng dễ ăn.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 3,
+          "title": "Pha nước trộn",
+          "description": "Khuấy nước chanh, dầu olive và muối trong bát nhỏ. Nếm điều chỉnh theo khẩu vị.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 4,
+          "title": "Trộn nhẹ",
+          "description": "Cho rau, đậu gà, bắp và hạt điều rang vào bát lớn. Rưới sốt vừa đủ và đảo nhẹ.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 5,
+          "title": "Thưởng thức",
+          "description": "Chia ra đĩa và dùng ngay. Nếu chưa ăn, để sốt riêng và bảo quản các thành phần trong tủ lạnh.",
+          "timerMinutes": null
+        }
+      ],
+      "images": [
+        {
+          "originalUrl": "/images/salad-dau-ga.webp",
+          "altText": "Salad đậu gà và rau xanh",
+          "isPrimary": true,
+          "displayOrder": 1
+        }
+      ]
+    },
+    {
+      "id": "864ee11c-d884-58a8-9f77-e12f32d202dc",
+      "title": "Pizza nấm và ớt chuông",
+      "slug": "pizza-nam-ot-chuong",
+      "description": "Nấm thơm, ớt chuông ngọt và phô mai nóng chảy trên đế bánh giòn. Một lựa chọn dễ làm cho buổi tối cuối tuần.",
+      "notes": "Đế làm sẵn có thời gian nướng khác nhau. Ưu tiên hướng dẫn của sản phẩm và theo dõi bánh trong lò.",
+      "prepTimeMinutes": 15,
+      "cookTimeMinutes": 20,
+      "servings": 2,
+      "difficulty": 1,
+      "categoryId": "7828bf3f-1699-5a33-9d00-23de60e89905",
+      "authorId": "79921df6-dd90-5a0c-89de-fb31ab9f0186",
+      "ingredients": [
+        {
+          "name": "đế pizza làm sẵn",
+          "quantity": 1,
+          "unit": "cái",
+          "notes": "Khoảng 25–28 cm",
+          "orderIndex": 1
+        },
+        {
+          "name": "sốt cà chua",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 2
+        },
+        {
+          "name": "phô mai mozzarella",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "",
+          "orderIndex": 3
+        },
+        {
+          "name": "ớt chuông",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "Thái lát mỏng",
+          "orderIndex": 4
+        },
+        {
+          "name": "nấm",
+          "quantity": 80,
+          "unit": "g",
+          "notes": "Thái lát",
+          "orderIndex": 5
+        },
+        {
+          "name": "dầu olive",
+          "quantity": 1,
+          "unit": "thìa canh",
+          "notes": "",
+          "orderIndex": 6
+        },
+        {
+          "name": "lá oregano khô",
+          "quantity": 0.5,
+          "unit": "thìa cà phê",
+          "notes": "",
+          "orderIndex": 7
+        },
+        {
+          "name": "hành tây",
+          "quantity": 50,
+          "unit": "g",
+          "notes": "Thái mỏng",
+          "orderIndex": 8
+        }
+      ],
+      "steps": [
+        {
+          "stepNumber": 1,
+          "title": "Làm nóng lò",
+          "description": "Làm nóng lò theo hướng dẫn của đế pizza; thông thường khoảng 220°C. Chuẩn bị khay chịu nhiệt phù hợp.",
+          "timerMinutes": 10
+        },
+        {
+          "stepNumber": 2,
+          "title": "Chuẩn bị rau",
+          "description": "Rửa ớt chuông và làm sạch nấm, để ráo rồi thái lát mỏng để rau chín đều khi nướng.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 3,
+          "title": "Phủ đế bánh",
+          "description": "Phết sốt cà chua lên đế, chừa viền khoảng 1 cm. Rải phô mai, nấm, ớt chuông, hành tây thái mỏng và lá oregano.",
+          "timerMinutes": null
+        },
+        {
+          "stepNumber": 4,
+          "title": "Nướng bánh",
+          "description": "Nướng theo hướng dẫn trên bao bì đế bánh, khoảng 15–20 phút, đến khi viền bánh vàng và nhân nóng đều. Theo dõi lò để tránh cháy.",
+          "timerMinutes": 18
+        },
+        {
+          "stepNumber": 5,
+          "title": "Cắt và dùng",
+          "description": "Lấy khay bằng găng cách nhiệt, để bánh nghỉ ngắn cho phô mai ổn định rồi cắt miếng. Dùng khi còn ấm.",
+          "timerMinutes": null
+        }
+      ],
+      "images": [
+        {
+          "originalUrl": "/images/pizza-rau-cu.webp",
+          "altText": "Pizza rau củ tại nhà",
+          "isPrimary": true,
+          "displayOrder": 1
+        }
+      ]
+    }
+  ]
+}

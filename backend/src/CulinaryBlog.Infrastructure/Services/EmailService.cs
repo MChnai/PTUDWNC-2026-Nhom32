@@ -1,24 +1,25 @@
+using System.Net;
+using System.Net.Mail;
 using CulinaryBlog.Application.Common.Interfaces;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-
 namespace CulinaryBlog.Infrastructure.Services;
-
-public class EmailService : IEmailService
+public class EmailService(IConfiguration config, ILogger<EmailService> logger) : IEmailService
 {
-    private readonly ILogger<EmailService> _logger;
-
-    public EmailService(ILogger<EmailService> logger)
+    public async Task SendWelcomeEmailAsync(string toEmail, string username, CancellationToken ct = default)
     {
-        _logger = logger;
-    }
-
-    public async Task SendWelcomeEmailAsync(string toEmail, string username, CancellationToken cancellationToken = default)
-    {
-        _logger.LogInformation("Đang gửi email chào mừng tới {Email} (Username: {Username})...", toEmail, username);
-
-        // Giả lập logic kết nối SMTP / SendGrid / Mailkit
-        await Task.Delay(500, cancellationToken);
-
-        _logger.LogInformation("Đã gửi email chào mừng thành công tới {Email}.", toEmail);
+        var host = config["Smtp:Host"];
+        if (string.IsNullOrWhiteSpace(host)) throw new InvalidOperationException("Chưa cấu hình SMTP để gửi email chào mừng.");
+        using var smtp = new SmtpClient(host, config.GetValue("Smtp:Port", 1025)) { EnableSsl = config.GetValue("Smtp:EnableSsl", false) };
+        if (!string.IsNullOrWhiteSpace(config["Smtp:Username"])) smtp.Credentials = new NetworkCredential(config["Smtp:Username"], config["Smtp:Password"]);
+        var name = WebUtility.HtmlEncode(username);
+        var client = WebUtility.HtmlEncode(config["ClientUrl"] ?? "http://localhost:3000");
+        using var message = new MailMessage(config["Smtp:From"] ?? "hello@culinary.local", toEmail)
+        {
+            Subject = "Chào mừng bạn đến với căn bếp Culinary!", IsBodyHtml = true,
+            Body = $"<h1>Chào {name}!</h1><p>Căn bếp Culinary luôn chào đón bạn.</p><p><a href=\"{client}/recipes\">Khám phá công thức đầu tiên</a></p>"
+        };
+        await smtp.SendMailAsync(message, ct);
+        logger.LogInformation("Welcome email sent successfully.");
     }
 }
